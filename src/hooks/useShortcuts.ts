@@ -18,6 +18,10 @@ export function useShortcuts() {
   const loadData = async () => {
     try {
       setLoading(true);
+      
+      // Initialize defaults if no data exists
+      await invoke('initialize_defaults');
+
       const [listsData, appsData, settingsData, activeAppData] = await Promise.all([
         invoke<ShortcutList[]>('get_all_lists'),
         invoke<Application[]>('get_all_applications'),
