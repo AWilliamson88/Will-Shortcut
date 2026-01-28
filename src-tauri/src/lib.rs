@@ -143,8 +143,9 @@ pub fn run() {
             toggle_window
             ])
             .setup(|app| {
-                use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutEvent};
-                
+                use tauri_plugin_global_shortcut::GlobalShortcutExt;
+                use active_win_pos_rs::get_active_window;
+
                 // Register global hotkey
                 let handle = app.handle().clone();
                 app.global_shortcut().on_shortcut("CommandOrControl+Shift+K", move |_app, _shortcut, event| {
@@ -156,12 +157,52 @@ pub fn run() {
                                 if is_visible {
                                     let _ = window.hide();
                                 } else {
+                                    // Get the monitor where the active window is located
+                                    let target_monitor = if let Ok(active_win) = get_active_window() {
+                                        // Get all monitors and find which one contains the active window
+                                        if let Ok(monitors) = window.available_monitors() {
+                                            monitors.into_iter().find(|monitor| {
+                                                let pos = monitor.position();
+                                                let size = monitor.size();
+                                                let monitor_x = pos.x;
+                                                let monitor_y = pos.y;
+                                                let monitor_width = size.width as i32;
+                                                let monitor_height = size.height as i32;
+
+                                                // Check if active window center is within this monitor
+                                                let active_center_x = (active_win.position.x + active_win.position.width / 2.0) as i32;
+                                                let active_center_y = (active_win.position.y + active_win.position.height / 2.0) as i32;
+
+                                                active_center_x >= monitor_x &&
+                                                active_center_x < monitor_x + monitor_width &&
+                                                active_center_y >= monitor_y &&
+                                                active_center_y < monitor_y + monitor_height
+                                            })
+                                        } else {
+                                            None
+                                        }
+                                    } else {
+                                        None
+                                    };
+
+                                    // Use the detected monitor or fall back to current monitor
+                                    let monitor = target_monitor.or_else(|| window.current_monitor().ok().flatten());
+
                                     // Position and show
-                                    if let Some(monitor) = window.current_monitor().ok().flatten() {
+                                    if let Some(monitor) = monitor {
+                                        let monitor_pos = monitor.position();
                                         let screen_size = monitor.size();
+
                                         if let Ok(window_size) = window.outer_size() {
-                                            let x = screen_size.width as i32 - window_size.width as i32 - 20;
-                                            let y = screen_size.height as i32 - window_size.height as i32 - 20;
+                                            // Position at right side of screen, bottom aligned flush with taskbar
+                                            // Taskbar height on Windows is typically 40-48px
+                                            let taskbar_height = 40;
+
+                                            // Right side, flush with edge
+                                            let x = monitor_pos.x + screen_size.width as i32 - window_size.width as i32;
+                                            // Bottom, flush with taskbar
+                                            let y = monitor_pos.y + screen_size.height as i32 - window_size.height as i32 - taskbar_height;
+
                                             let _ = window.set_position(PhysicalPosition::new(x, y));
                                         }
                                     }
@@ -172,7 +213,7 @@ pub fn run() {
                         }
                     }
                 })?;
-                
+
                 Ok(())
             })
         .run(tauri::generate_context!())
