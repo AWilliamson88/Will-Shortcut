@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { listen } from '@tauri-apps/api/event';
 import { useShortcuts } from '../hooks/useShortcuts';
 import { ShortcutList, Shortcut } from '../types';
 import { Keyboard, Settings as SettingsIcon, Plus, Edit2, Trash2 } from 'lucide-react';
@@ -12,14 +13,27 @@ export function Popup() {
   const [editingShortcut, setEditingShortcut] = useState<Shortcut | undefined>(undefined);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [deletingShortcutId, setDeletingShortcutId] = useState<string | null>(null);
+  const [detectedActiveApp, setDetectedActiveApp] = useState<string>('');
+
+  // Listen for active app detection event
+  useEffect(() => {
+    const unlisten = listen<string>('active-app-detected', (event) => {
+      setDetectedActiveApp(event.payload);
+    });
+
+    return () => {
+      unlisten.then(fn => fn());
+    };
+  }, []);
 
   // Auto-select the first list when data loads
   useEffect(() => {
     if (lists.length > 0 && !selectedList) {
-      // Try to find a list for the active app
+      // Try to find a list for the active app (use detected app if available)
+      const currentActiveApp = detectedActiveApp || activeApp;
       const activeAppLists = lists.filter(list => {
         const app = applications.find(a => a.id === list.application_id);
-        return app?.process_name === activeApp;
+        return app?.process_name === currentActiveApp;
       });
 
       if (activeAppLists.length > 0) {
@@ -28,7 +42,7 @@ export function Popup() {
         setSelectedList(lists[0]);
       }
     }
-  }, [lists, applications, activeApp, selectedList]);
+  }, [lists, applications, activeApp, detectedActiveApp, selectedList]);
 
   // Update selectedList when lists change
   useEffect(() => {
@@ -214,7 +228,7 @@ export function Popup() {
 
       {/* Footer */}
       <div className="p-3 border-t border-gray-700 text-xs text-gray-500 text-center">
-        Active: {activeApp || 'Unknown'}
+        Active: {detectedActiveApp || activeApp || 'Unknown'}
       </div>
 
       {/* Modal */}

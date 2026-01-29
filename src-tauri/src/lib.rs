@@ -3,6 +3,8 @@ mod storage;
 mod window_detection;
 mod defaults;
 
+use tauri::Emitter;
+
 #[tauri::command]
 fn greet(name: &str) -> String {
     format!("Hello, {}! You've been greeted from Rust!", name)
@@ -157,6 +159,11 @@ pub fn run() {
                                 if is_visible {
                                     let _ = window.hide();
                                 } else {
+                                    // Get the active app BEFORE showing the window
+                                    if let Ok(active_app_name) = crate::window_detection::get_active_application() {
+                                        let _ = window.emit("active-app-detected", active_app_name);
+                                    }
+
                                     // Get the monitor where the active window is located
                                     let target_monitor = if let Ok(active_win) = get_active_window() {
                                         // Get all monitors and find which one contains the active window
@@ -197,9 +204,11 @@ pub fn run() {
                                             // Position at right side of screen, bottom aligned flush with taskbar
                                             // Taskbar height on Windows is typically 40-48px
                                             let taskbar_height = 40;
+                                            // Windows has an invisible border even on frameless windows (~8px)
+                                            let border_offset = 8;
 
-                                            // Right side, flush with edge
-                                            let x = monitor_pos.x + screen_size.width as i32 - window_size.width as i32;
+                                            // Right side, flush with edge (compensate for invisible border)
+                                            let x = monitor_pos.x + screen_size.width as i32 - window_size.width as i32 + border_offset;
                                             // Bottom, flush with taskbar
                                             let y = monitor_pos.y + screen_size.height as i32 - window_size.height as i32 - taskbar_height;
 
