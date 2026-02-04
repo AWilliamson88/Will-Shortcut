@@ -9,7 +9,9 @@ pub fn get_active_application() -> Result<String, String> {
             let process_path = active_window.process_path;
             if let Some(file_name) = Path::new(&process_path).file_name() {
                 if let Some(name) = file_name.to_str() {
-                    return Ok(name.to_string());
+                    // Remove file extension (e.g., .exe)
+                    let name_without_ext = name.trim_end_matches(".exe");
+                    return Ok(name_without_ext.to_string());
                 }
             }
             Ok(process_path.to_string_lossy().to_string())

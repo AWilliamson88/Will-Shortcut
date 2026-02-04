@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 import { Shortcut } from '../types';
 import { v4 as uuidv4 } from 'uuid';
@@ -13,8 +13,10 @@ interface ShortcutModalProps {
 }
 
 export function ShortcutModal({ isOpen, onClose, onSave, shortcut, nextOrder }: ShortcutModalProps) {
-  const [keyCombo, setKeyCombo] = useState('');
-  const [description, setDescription] = useState('');
+const [keyCombo, setKeyCombo] = useState('');
+const [description, setDescription] = useState('');
+
+const descriptionInputRef = useRef<HTMLInputElement>(null);
 
   // Populate form when editing
   useEffect(() => {
@@ -75,6 +77,9 @@ export function ShortcutModal({ isOpen, onClose, onSave, shortcut, nextOrder }: 
                 value={keyCombo}
                 onChange={setKeyCombo}
                 placeholder="Click and press keys..."
+                onRequestNextField={() => {
+                  descriptionInputRef.current?.focus();
+                }}
             />
             </div>
 
@@ -84,6 +89,7 @@ export function ShortcutModal({ isOpen, onClose, onSave, shortcut, nextOrder }: 
                 Description
               </label>
               <input
+                ref={descriptionInputRef}
                 type="text"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}

@@ -156,7 +156,8 @@ pub fn run() {
                         if let Some(window) = handle.get_webview_window("main") {
                             // Toggle window visibility directly
                             if let Ok(is_visible) = window.is_visible() {
-                                if is_visible {
+                               if is_visible {
+                                    let _ = window.emit("popup-hidden", true);
                                     let _ = window.hide();
                                 } else {
                                     // Get the active app BEFORE showing the window

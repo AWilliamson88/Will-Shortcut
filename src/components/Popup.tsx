@@ -54,6 +54,19 @@ export function Popup() {
     }
   }, [lists]);
 
+  useEffect(() => {
+    const unlistenPromise = listen('popup-hidden', () => {
+      setIsConfirmOpen(false);
+      setDeletingShortcutId(null);
+      setIsModalOpen(false);
+      setEditingShortcut(undefined);
+    });
+
+    return () => {
+      unlistenPromise.then(unlisten => unlisten());
+    };
+  }, []);
+
   const handleAddShortcut = () => {
     setEditingShortcut(undefined);
     setIsModalOpen(true);
