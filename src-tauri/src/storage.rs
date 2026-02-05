@@ -48,9 +48,32 @@ pub struct Settings {
     pub keyboard_shortcuts: KeyboardShortcuts,
 }
 
+const APP_APPLICATIONS_JSON: &str = include_str!("applications.json");
+
+fn user_applications_path() -> Result<PathBuf, String> {
+    let data_dir = get_data_dir()?;
+    Ok(data_dir.join("user-applications.json"))
+}
+
+pub fn load_user_applications() -> Result<Vec<Application>, String> {
+    let path = user_applications_path()?;
+    if path.exists() {
+        let contents = fs::read_to_string(path).map_err(|e| e.to_string())?;
+        serde_json::from_str(&contents).map_err(|e| e.to_string())
+    } else {
+        Ok(Vec::new())
+    }
+}
+
+pub fn save_user_applications(apps: &Vec<Application>) -> Result<(), String> {
+    let path = user_applications_path()?;
+    let json = serde_json::to_string_pretty(apps).map_err(|e| e.to_string())?;
+    fs::write(path, json).map_err(|e| e.to_string())
+}
+
 // Get the app data directory
 pub fn get_data_dir() -> Result<PathBuf, String> {
-    if let Some(proj_dirs) = ProjectDirs::from("com", "andre", "will-shortcut") {
+    if let Some(proj_dirs) = ProjectDirs::from("com", "AWilliamson88", "WillShortcut") {
         let data_dir = proj_dirs.data_dir().to_path_buf();
         fs::create_dir_all(&data_dir).map_err(|e| e.to_string())?;
         Ok(data_dir)
@@ -115,15 +138,16 @@ pub fn save_lists(lists: &Vec<ShortcutList>) -> Result<(), String> {
 
 // Load all applications
 pub fn load_applications() -> Result<Vec<Application>, String> {
-    let data_dir = get_data_dir()?;
-    let apps_path = data_dir.join("applications.json");
-    
-    if apps_path.exists() {
-        let contents = fs::read_to_string(apps_path).map_err(|e| e.to_string())?;
-        serde_json::from_str(&contents).map_err(|e| e.to_string())
-    } else {
-        Ok(Vec::new())
+    let mut apps: Vec<Application> =
+        serde_json::from_str(APP_APPLICATIONS_JSON).map_err(|e| e.to_string())?;
+    for user_app in load_user_applications()? {
+        if let Some(existing) = apps.iter_mut().find(|a| a.id == user_app.id) {
+            *existing = user_app; // user overrides bundled app
+        } else {
+            apps.push(user_app);  // user adds new app
+        }
     }
+    Ok(apps)
 }
 
 // Save all applications

@@ -54,15 +54,13 @@ fn get_all_applications() -> Result<Vec<storage::Application>, String> {
 // Save an application
 #[tauri::command]
 fn save_application(app: storage::Application) -> Result<(), String> {
-    let mut apps = storage::load_applications()?;
-    
-    if let Some(index) = apps.iter().position(|a| a.id == app.id) {
-        apps[index] = app;
+    let mut user_apps = storage::load_user_applications()?;
+    if let Some(index) = user_apps.iter().position(|a| a.id == app.id) {
+        user_apps[index] = app;
     } else {
-        apps.push(app);
+        user_apps.push(app);
     }
-    
-    storage::save_applications(&apps)
+    storage::save_user_applications(&user_apps)
 }
 
 // Get settings
@@ -81,15 +79,10 @@ fn save_settings(settings: storage::Settings) -> Result<(), String> {
 #[tauri::command]
 fn initialize_defaults() -> Result<(), String> {
     let lists = storage::load_lists()?;
-    let apps = storage::load_applications()?;
-    
-    // Only initialize if no data exists
-    if lists.is_empty() && apps.is_empty() {
-        let (default_apps, default_lists) = defaults::create_default_data();
-        storage::save_applications(&default_apps)?;
+    if lists.is_empty() {
+        let (_default_apps, default_lists) = defaults::create_default_data();
         storage::save_lists(&default_lists)?;
     }
-    
     Ok(())
 }
 

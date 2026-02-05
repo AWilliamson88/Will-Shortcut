@@ -1,6 +1,9 @@
 use crate::storage::{Application, Shortcut, ShortcutList};
 use uuid::Uuid;
 
+const VSCODE_APP_ID: &str = "2d0086a5-7cf5-40b1-a3ff-97e742d4e05e";
+const CHROME_APP_ID: &str = "658cf89a-1955-43b9-95b1-6bbc1673aac5";
+
 pub fn create_default_data() -> (Vec<Application>, Vec<ShortcutList>) {
     let mut applications = Vec::new();
     let mut lists = Vec::new();
@@ -15,7 +18,7 @@ pub fn create_default_data() -> (Vec<Application>, Vec<ShortcutList>) {
         last_used_list_id: None,
     });
 
-    let vscode_list_id = Uuid::new_v4().to_string();
+    let vscode_list_id = VSCODE_APP_ID.to_string();
     lists.push(ShortcutList {
         id: vscode_list_id,
         name: "General".to_string(),
@@ -57,7 +60,7 @@ pub fn create_default_data() -> (Vec<Application>, Vec<ShortcutList>) {
     });
 
     // Chrome
-    let chrome_id = Uuid::new_v4().to_string();
+    let chrome_id = CHROME_APP_ID.to_string();
     applications.push(Application {
         id: chrome_id.clone(),
         name: "Google Chrome".to_string(),
