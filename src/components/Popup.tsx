@@ -5,15 +5,18 @@ import { ShortcutList, Shortcut } from '../types';
 import { Keyboard, Settings as SettingsIcon, Plus, Edit2, Trash2 } from 'lucide-react';
 import { ShortcutModal } from './ShortcutModal';
 import { ConfirmModal } from './ConfirmModal';
+import { v4 as uuidv4 } from 'uuid';
+import { ListManageModal } from './ListManageModal';
 
 export function Popup() {
-  const { lists, applications, activeApp, loading, error, saveList } = useShortcuts();
+  const { lists, applications, activeApp, loading, error, saveList, deleteList } = useShortcuts();
   const [selectedList, setSelectedList] = useState<ShortcutList | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingShortcut, setEditingShortcut] = useState<Shortcut | undefined>(undefined);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [deletingShortcutId, setDeletingShortcutId] = useState<string | null>(null);
   const [detectedActiveApp, setDetectedActiveApp] = useState<string>('');
+  const [isListModalOpen, setIsListModalOpen] = useState(false);
 
   // Listen for active app detection event
   useEffect(() => {
@@ -60,6 +63,7 @@ export function Popup() {
       setDeletingShortcutId(null);
       setIsModalOpen(false);
       setEditingShortcut(undefined);
+      setIsListModalOpen(false);
     });
 
     return () => {
@@ -113,6 +117,53 @@ export function Popup() {
     setDeletingShortcutId(null);
   };
 
+  const handleCreateList = async (name: string) => {
+    if (applications.length === 0) return;
+
+    const currentActiveApp = detectedActiveApp || activeApp;
+
+    // Try to bind the new list to the active app; fall back to first app
+    const appForList =
+      applications.find(app => app.process_name === currentActiveApp) ??
+      applications[0];
+
+    const now = new Date().toISOString();
+
+    const newList: ShortcutList = {
+      id: uuidv4(),
+      name: name.trim(),
+      application_id: appForList.id,
+      shortcuts: [],
+      created_at: now,
+      updated_at: now,
+    };
+
+    await saveList(newList);
+    setSelectedList(newList);
+  };
+
+  const handleDeleteCurrentList = async () => {
+    if (!selectedList) return;
+    await deleteList(selectedList.id);
+    setSelectedList(null);
+  };
+
+  const handleRenameList = async (name: string) => {
+    if (!selectedList) return;
+
+    const trimmed = name.trim();
+    if (!trimmed || trimmed === selectedList.name) return;
+
+    const updatedList: ShortcutList = {
+      ...selectedList,
+      name: trimmed,
+      updated_at: new Date().toISOString(),
+    };
+
+    await saveList(updatedList);
+  };
+
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-900 text-white">
@@ -150,18 +201,17 @@ export function Popup() {
       </div>
 
       {/* Dropdown */}
-      <div className="p-4 border-b border-gray-700">
+      <div className="p-4 border-b border-gray-700 flex items-center gap-2">
         <select
-          className="w-full bg-gray-800 text-white px-3 py-2 rounded border border-gray-700 focus:outline-none focus:border-blue-500"
+          className="flex-1 bg-gray-800 text-white px-3 py-2 rounded border border-gray-700
+                    focus:outline-none focus:border-blue-500"
           value={selectedList?.id || ''}
           onChange={(e) => {
             const list = lists.find(l => l.id === e.target.value);
             setSelectedList(list || null);
           }}
         >
-          {lists.length === 0 && (
-            <option value="">No lists available</option>
-          )}
+          {lists.length === 0 && <option value="">No lists available</option>}
           {lists.map(list => {
             const app = applications.find(a => a.id === list.application_id);
             return (
@@ -171,20 +221,15 @@ export function Popup() {
             );
           })}
         </select>
+        <button
+          type="button"
+          onClick={() => setIsListModalOpen(true)}
+          className="p-2 bg-gray-800 border border-gray-700 rounded hover:bg-gray-700"
+          title={selectedList ? 'Edit list' : 'Create list'}
+        >
+          <Edit2 className="w-4 h-4 text-gray-300" />
+        </button>
       </div>
-
-      {/* Add Shortcut Button */}
-      {selectedList && (
-        <div className="px-4 pt-4">
-          <button
-            onClick={handleAddShortcut}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Add Shortcut
-          </button>
-        </div>
-      )}
 
       {/* Shortcuts List */}
       <div className="flex-1 overflow-y-auto p-4">
@@ -195,11 +240,11 @@ export function Popup() {
               .map(shortcut => (
                 <div
                   key={shortcut.id}
-                  className="bg-gray-800 p-3 rounded border border-gray-700 hover:border-gray-600 transition-colors group"
+                  className="bg-gray-800 p-1 rounded border border-gray-700 hover:border-gray-600 transition-colors group"
                 >
-                  <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center justify-between gap-1">
                     <span className="text-sm text-gray-300 flex-1">{shortcut.description}</span>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
                       <kbd className="px-2 py-1 bg-gray-700 rounded text-xs font-mono text-blue-400">
                         {shortcut.key_combo}
                       </kbd>
@@ -238,6 +283,19 @@ export function Popup() {
           </div>
         )}
       </div>
+      
+      {/* Add Shortcut Button */}
+      {selectedList && (
+        <div className="px-4 py-3">
+          <button
+            onClick={handleAddShortcut}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Add Shortcut
+          </button>
+        </div>
+      )}
 
       {/* Footer */}
       <div className="p-3 border-t border-gray-700 text-xs text-gray-500 text-center">
@@ -263,6 +321,15 @@ export function Popup() {
         onConfirm={confirmDelete}
         title="Delete Shortcut"
         message="Are you sure you want to delete this shortcut? This action cannot be undone."
+      />
+
+      <ListManageModal
+        isOpen={isListModalOpen}
+        selectedList={selectedList}
+        onClose={() => setIsListModalOpen(false)}
+        onCreate={handleCreateList}
+        onRename={handleRenameList}
+        onDelete={handleDeleteCurrentList}
       />
     </div>
   );
