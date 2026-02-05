@@ -1,3 +1,4 @@
+
 # Tauri + React + Typescript
 
 This template should help get you started developing with Tauri, React and Typescript in Vite.
@@ -32,19 +33,25 @@ npm run tauri dev
 
 # TODO
 
-- [ ] Add the ability to add new applications
-- [ ] Add the ability to add new lists
-- [ ] Add the ability to add new shortcuts
-- [ ] Add the ability to edit shortcuts
-- [ ] Add the ability to delete shortcuts
+- [X] Add the ability to add new shortcuts
+- [X] Add the ability to edit shortcuts
+- [X] Add the ability to delete shortcuts
 - [ ] Add the ability to move shortcuts up and down
 - [ ] Add the ability to duplicate shortcuts
-- [ ] Add the ability to delete lists
+- [X] Add the ability to delete lists
+- [ ] Move the delete shortcut buttons from the individual shortcuts to the edit modal.
 
-## New shortcut modal
-- [ ] Fix key combination field not using the key combo pressed. (Ctrl must be typed in for example)
-- [ ] Modal should close if main app closed.
-- [ ] Add shortcut button should be at bottom of the list.
-- [ ] Save button should be enabled only if key combination and description are filled.
-- [ ] Add shortcut button should be disabled if no list is selected.
-- [ ] If no application is selected use add to default list.
+## Right click menu
+- [ ] Delete
+- [ ] Rename
+- [ ] Add new
+
+## Applications
+- [ ] Change the application name asscociated with a process name.
+ - - Some applications names get quite long and don't fit well in the dropdown. "Visual Studio Code" and be shortened to "VS Code" for example.
+ - - Should we allow the user to change the application's name?
+
+## Edit List Modal
+- [ ] Move add/edit/delete shortcut functionality to edit list modal.
+    - Current buttons take up too much space on the list.
+
