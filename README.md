@@ -37,9 +37,16 @@ npm run tauri dev
 - [X] Add the ability to edit shortcuts
 - [X] Add the ability to delete shortcuts
 - [ ] Add the ability to move shortcuts up and down
-- [ ] Add the ability to duplicate shortcuts
 - [X] Add the ability to delete lists
-- [ ] Move the delete shortcut buttons from the individual shortcuts to the edit modal.
+- [X] Move the delete shortcut buttons from the individual shortcuts to the edit modal.
+- [ ] Description field capitalise the first letter of each word when saving.
+
+## Settings
+- [ ] Settings page
+- [ ] Settings to change the global hotkey
+- [ ] Settings to change the appearance (light/dark)
+- [ ] Settings to change the window size
+- [ ] Settings to change the window position
 
 ## Right click menu
 - [ ] Delete
@@ -51,7 +58,13 @@ npm run tauri dev
  - - Some applications names get quite long and don't fit well in the dropdown. "Visual Studio Code" and be shortened to "VS Code" for example.
  - - Should we allow the user to change the application's name?
 
-## Edit List Modal
-- [ ] Move add/edit/delete shortcut functionality to edit list modal.
-    - Current buttons take up too much space on the list.
+ ## Application Lists
+ - [ ] Set the order of lists
+ - [ ] Buttons/shortcuts to swap current list.(Cycles through the lists for current application)
+
+## Issues
+- [ ] Key combination field uses shift key character. Eg. "Ctrl+Shift+|" instead of "Ctrl+Shift+\".
+- [ ] Key combination field space isn't regecognized.
+- [ ] Current styles waste too much space. Need more compact styling
+- [ ] Will need ability to create shortcuts like. Ctrl+Shift+[ or ] or Ctrl+1/2/3
 
