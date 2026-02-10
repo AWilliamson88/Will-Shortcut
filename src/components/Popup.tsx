@@ -2,9 +2,8 @@ import { useState, useEffect } from 'react';
 import { listen } from '@tauri-apps/api/event';
 import { useShortcuts } from '../hooks/useShortcuts';
 import { ShortcutList, Shortcut } from '../types';
-import { Keyboard, Settings as SettingsIcon, Plus, Edit2, Trash2 } from 'lucide-react';
+import { Keyboard, Settings as SettingsIcon, Plus, Edit2 } from 'lucide-react';
 import { ShortcutModal } from './ShortcutModal';
-import { ConfirmModal } from './ConfirmModal';
 import { v4 as uuidv4 } from 'uuid';
 import { ListManageModal } from './ListManageModal';
 
@@ -13,8 +12,6 @@ export function Popup() {
   const [selectedList, setSelectedList] = useState<ShortcutList | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingShortcut, setEditingShortcut] = useState<Shortcut | undefined>(undefined);
-  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
-  const [deletingShortcutId, setDeletingShortcutId] = useState<string | null>(null);
   const [detectedActiveApp, setDetectedActiveApp] = useState<string>('');
   const [isListModalOpen, setIsListModalOpen] = useState(false);
 
@@ -59,8 +56,6 @@ export function Popup() {
 
   useEffect(() => {
     const unlistenPromise = listen('popup-hidden', () => {
-      setIsConfirmOpen(false);
-      setDeletingShortcutId(null);
       setIsModalOpen(false);
       setEditingShortcut(undefined);
       setIsListModalOpen(false);
@@ -98,15 +93,10 @@ export function Popup() {
   };
 
   const handleDeleteShortcut = async (shortcutId: string) => {
-  setDeletingShortcutId(shortcutId);
-  setIsConfirmOpen(true);
-};
+    if (!selectedList) return;
 
-  const confirmDelete = async () => {
-    if (!selectedList || !deletingShortcutId) return;
+    const updatedShortcuts = selectedList.shortcuts.filter(s => s.id !== shortcutId);
 
-    const updatedShortcuts = selectedList.shortcuts.filter(s => s.id !== deletingShortcutId);
-    
     const updatedList: ShortcutList = {
       ...selectedList,
       shortcuts: updatedShortcuts,
@@ -114,7 +104,6 @@ export function Popup() {
     };
 
     await saveList(updatedList);
-    setDeletingShortcutId(null);
   };
 
   const handleCreateList = async (name: string) => {
@@ -190,20 +179,17 @@ export function Popup() {
   return (
     <div className="h-screen w-full bg-gray-900 text-white flex flex-col">
       {/* Header */}
-      <div className="p-4 border-b border-gray-700 flex items-center justify-between">
+      <div className="px-2 border-b border-gray-700 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Keyboard className="w-5 h-5" />
           <h1 className="text-lg font-semibold">Shortcuts</h1>
         </div>
-        <button className="p-2 hover:bg-gray-800 rounded">
-          <SettingsIcon className="w-5 h-5" />
-        </button>
       </div>
 
       {/* Dropdown */}
-      <div className="p-4 border-b border-gray-700 flex items-center gap-2">
+      <div className="p-1 border-b border-gray-700 flex items-center gap-2">
         <select
-          className="flex-1 bg-gray-800 text-white px-3 py-2 rounded border border-gray-700
+          className="flex-1 bg-gray-800 text-white px-2 py-1 rounded border border-gray-700
                     focus:outline-none focus:border-blue-500"
           value={selectedList?.id || ''}
           onChange={(e) => {
@@ -223,48 +209,40 @@ export function Popup() {
         </select>
         <button
           type="button"
-          onClick={() => setIsListModalOpen(true)}
+          onClick={() => {
+            console.log("Edit button clicked");
+            setIsListModalOpen(true);
+          }}
           className="p-2 bg-gray-800 border border-gray-700 rounded hover:bg-gray-700"
           title={selectedList ? 'Edit list' : 'Create list'}
         >
           <Edit2 className="w-4 h-4 text-gray-300" />
         </button>
+        <button
+          // className="p-1 hover:bg-gray-800 rounded"
+          className="p-2 bg-gray-800 border border-gray-700 rounded hover:bg-gray-700"
+        >
+          <SettingsIcon className="w-4 h-4" />
+        </button>
       </div>
 
       {/* Shortcuts List */}
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto py-1">
         {selectedList && selectedList.shortcuts.length > 0 ? (
-          <div className="space-y-2">
+          <div className="">
             {selectedList.shortcuts
               .sort((a, b) => a.order - b.order)
-              .map(shortcut => (
+              .map((shortcut, index) => (
                 <div
                   key={shortcut.id}
-                  className="bg-gray-800 p-1 rounded border border-gray-700 hover:border-gray-600 transition-colors group"
+                  onClick={() => handleEditShortcut(shortcut)}
+                  className={`bg-gray-${index % 2 === 0 ? '7' : '8'}00 px-1 hover:bg-gray-600 transition-colors cursor-pointer`}
                 >
                   <div className="flex items-center justify-between gap-1">
-                    <span className="text-sm text-gray-300 flex-1">{shortcut.description}</span>
-                    <div className="flex items-center gap-1">
-                      <kbd className="px-2 py-1 bg-gray-700 rounded text-xs font-mono text-blue-400">
-                        {shortcut.key_combo}
-                      </kbd>
-                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => handleEditShortcut(shortcut)}
-                          className="p-1 hover:bg-gray-700 rounded"
-                          title="Edit"
-                        >
-                          <Edit2 className="w-4 h-4 text-gray-400" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteShortcut(shortcut.id)}
-                          className="p-1 hover:bg-gray-700 rounded"
-                          title="Delete"
-                        >
-                          <Trash2 className="w-4 h-4 text-red-400" />
-                        </button>
-                      </div>
-                    </div>
+                    <span className="text-sm text-gray-300">{shortcut.description}</span>
+                    <kbd className="px-2 py-1 rounded text-base font-mono">
+                      {shortcut.key_combo}
+                    </kbd>
                   </div>
                 </div>
               ))}
@@ -283,7 +261,7 @@ export function Popup() {
           </div>
         )}
       </div>
-      
+
       {/* Add Shortcut Button */}
       {selectedList && (
         <div className="px-4 py-3">
@@ -298,7 +276,7 @@ export function Popup() {
       )}
 
       {/* Footer */}
-      <div className="p-3 border-t border-gray-700 text-xs text-gray-500 text-center">
+      <div className="p-3 border-t border-gray-700 text-base text-center">
         Active: {detectedActiveApp || activeApp || 'Unknown'}
       </div>
 
@@ -309,18 +287,7 @@ export function Popup() {
         onSave={handleSaveShortcut}
         shortcut={editingShortcut}
         nextOrder={nextOrder}
-      />
-
-      {/* Confirm Delete Modal */}
-      <ConfirmModal
-        isOpen={isConfirmOpen}
-        onClose={() => {
-          setIsConfirmOpen(false);
-          setDeletingShortcutId(null);
-        }}
-        onConfirm={confirmDelete}
-        title="Delete Shortcut"
-        message="Are you sure you want to delete this shortcut? This action cannot be undone."
+        onDelete={handleDeleteShortcut}
       />
 
       <ListManageModal

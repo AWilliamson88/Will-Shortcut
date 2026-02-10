@@ -3,6 +3,7 @@ import { X } from 'lucide-react';
 import { Shortcut } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import { KeyCaptureInput } from './KeyCaptureInput';
+import { ConfirmModal } from './ConfirmModal';
 
 interface ShortcutModalProps {
   isOpen: boolean;
@@ -10,13 +11,15 @@ interface ShortcutModalProps {
   onSave: (shortcut: Shortcut) => void;
   shortcut?: Shortcut; // If provided, we're editing; otherwise, creating new
   nextOrder: number; // The order number for a new shortcut
+	  onDelete?: (shortcutId: string) => void; // Optional delete handler when editing
 }
 
-export function ShortcutModal({ isOpen, onClose, onSave, shortcut, nextOrder }: ShortcutModalProps) {
-const [keyCombo, setKeyCombo] = useState('');
-const [description, setDescription] = useState('');
-
-const descriptionInputRef = useRef<HTMLInputElement>(null);
+	export function ShortcutModal({ isOpen, onClose, onSave, shortcut, nextOrder, onDelete }: ShortcutModalProps) {
+	const [keyCombo, setKeyCombo] = useState('');
+	const [description, setDescription] = useState('');
+	const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+	
+	const descriptionInputRef = useRef<HTMLInputElement>(null);
 
   // Populate form when editing
   useEffect(() => {
@@ -98,25 +101,66 @@ const descriptionInputRef = useRef<HTMLInputElement>(null);
               />
             </div>
           </div>
-
-          {/* Buttons */}
-          <div className="flex gap-2 mt-6">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-            >
-              {shortcut ? 'Save' : 'Add'}
-            </button>
-          </div>
+	
+	          {/* Buttons */}
+	          {shortcut ? (
+	            <div className="flex gap-2 mt-6">
+	              <button
+	                type="button"
+	                onClick={onClose}
+	                className="flex-1 px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600 transition-colors"
+	              >
+	                Cancel
+	              </button>
+	              {onDelete && (
+	                <button
+	                  type="button"
+	                  onClick={() => setIsConfirmOpen(true)}
+	                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+	                >
+	                  Delete
+	                </button>
+	              )}
+	              <button
+	                type="submit"
+	                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+	              >
+	                Save
+	              </button>
+	            </div>
+	          ) : (
+	            <div className="flex gap-2 mt-6">
+	              <button
+	                type="button"
+	                onClick={onClose}
+	                className="flex-1 px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600 transition-colors"
+	              >
+	                Cancel
+	              </button>
+	              <button
+	                type="submit"
+	                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+	              >
+	                Add
+	              </button>
+	            </div>
+	          )}
         </form>
       </div>
+
+	      {/* Confirm Delete Modal (only when editing) */}
+	      {shortcut && onDelete && (
+	        <ConfirmModal
+	          isOpen={isConfirmOpen}
+	          onClose={() => setIsConfirmOpen(false)}
+	          onConfirm={() => {
+	            onDelete(shortcut.id);
+	            onClose();
+	          }}
+	          title="Delete Shortcut"
+	          message="Are you sure you want to delete this shortcut? This action cannot be undone."
+	        />
+	      )}
     </div>
   );
 }
