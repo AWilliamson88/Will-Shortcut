@@ -141,7 +141,7 @@ pub fn load_applications() -> Result<Vec<Application>, String> {
     let mut apps: Vec<Application> =
         serde_json::from_str(APP_APPLICATIONS_JSON).map_err(|e| e.to_string())?;
     for user_app in load_user_applications()? {
-        if let Some(existing) = apps.iter_mut().find(|a| a.id == user_app.id) {
+        if let Some(existing) = apps.iter_mut().find(|a| a.process_name == user_app.process_name) {
             *existing = user_app; // user overrides bundled app
         } else {
             apps.push(user_app);  // user adds new app
