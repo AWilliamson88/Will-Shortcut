@@ -9,10 +9,11 @@ interface ListManageModalProps {
   onCreate: (name: string) => void;
   onRename: (name: string) => void;
   onDelete: () => void;
+  dumpApps: () => void; // Debugging
 }
 
 export function ListManageModal(props: ListManageModalProps) {
-  const { isOpen, selectedList, onClose, onCreate, onRename, onDelete } = props;
+  const { isOpen, selectedList, onClose, onCreate, onRename, onDelete, dumpApps } = props;
   const [mode, setMode] = useState<'edit' | 'create'>('create');
   const [name, setName] = useState('');
 
@@ -27,7 +28,7 @@ export function ListManageModal(props: ListManageModalProps) {
     }
   }, [isOpen, selectedList]);
 
-    const handlePrimary = (e: React.FormEvent) => {
+  const handlePrimary = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = name.trim();
     if (!trimmed) return;
@@ -47,13 +48,16 @@ export function ListManageModal(props: ListManageModalProps) {
     setName('');
   };
 
-    if (!isOpen) return null;
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-gray-800 rounded-lg p-4 w-72 border border-gray-700">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold text-white">
+          <h2 
+            className="text-sm font-semibold text-white"
+            onClick={dumpApps}
+          >
             {mode === 'edit' ? 'Edit List' : 'Create List'}
           </h2>
           <button onClick={onClose} className="p-1 hover:bg-gray-700 rounded">

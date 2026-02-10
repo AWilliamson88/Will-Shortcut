@@ -9,7 +9,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { ListManageModal } from './ListManageModal';
 
 export function Popup() {
-  const { lists, applications, activeApp, loading, error, saveList, deleteList } = useShortcuts();
+  const { lists, applications, activeApp, loading, error, saveList, deleteList, dumpApps } = useShortcuts();
   const [selectedList, setSelectedList] = useState<ShortcutList | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingShortcut, setEditingShortcut] = useState<Shortcut | undefined>(undefined);
@@ -330,6 +330,7 @@ export function Popup() {
         onCreate={handleCreateList}
         onRename={handleRenameList}
         onDelete={handleDeleteCurrentList}
+        dumpApps={dumpApps}
       />
     </div>
   );

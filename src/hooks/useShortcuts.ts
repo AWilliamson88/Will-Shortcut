@@ -91,6 +91,11 @@ export function useShortcuts() {
     }
   };
 
+  const dumpApps = async () => {
+    const apps = await invoke('debug_dump_applications');
+    console.log('Merged apps from Rust:', apps);
+  };
+
   return {
     lists,
     applications,
@@ -104,5 +109,6 @@ export function useShortcuts() {
     saveSettings,
     refreshActiveApp,
     reload: loadData,
+    dumpApps,
   };
 }

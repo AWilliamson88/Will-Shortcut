@@ -86,6 +86,14 @@ fn initialize_defaults() -> Result<(), String> {
     Ok(())
 }
 
+// Debugging command to print merged applications
+#[tauri::command]
+fn debug_dump_applications() -> Result<Vec<storage::Application>, String> {
+    let apps = storage::load_applications()?;
+    println!("Merged applications: {:#?}", apps);
+    Ok(apps)
+}
+
 use tauri::{Manager, PhysicalPosition};
 
 // Toggle window visibility
@@ -135,7 +143,8 @@ pub fn run() {
             get_settings,
             save_settings,
             initialize_defaults,
-            toggle_window
+            toggle_window,
+            debug_dump_applications
             ])
             .setup(|app| {
                 use tauri_plugin_global_shortcut::GlobalShortcutExt;
