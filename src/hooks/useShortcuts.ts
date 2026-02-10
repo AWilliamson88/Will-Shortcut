@@ -27,6 +27,7 @@ export function useShortcuts() {
         invoke<Application[]>('get_all_applications'),
         invoke<Settings>('get_settings'),
         invoke<string>('get_active_application'),
+        invoke<string>('get_active_window_title'),
       ]);
 
       setLists(listsData);
@@ -91,6 +92,15 @@ export function useShortcuts() {
     }
   };
 
+  const getActiveAppTitle = async () => {
+    try {
+      const app = await invoke<string>('get_active_window_title');
+      return app;
+    } catch (err) {
+      console.error('Failed to get active app:', err);
+    }
+  };
+
   const dumpApps = async () => {
     const apps = await invoke('debug_dump_applications');
     console.log('Merged apps from Rust:', apps);
@@ -110,5 +120,6 @@ export function useShortcuts() {
     refreshActiveApp,
     reload: loadData,
     dumpApps,
+    getActiveAppTitle,
   };
 }

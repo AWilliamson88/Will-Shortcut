@@ -16,6 +16,12 @@ fn get_active_application() -> Result<String, String> {
     window_detection::get_active_application()
 }
 
+// Get the currently active application's title
+#[tauri::command]
+fn get_active_window_title() -> Result<String, String> {
+    window_detection::get_active_window_title()
+}
+
 // Get all shortcut lists
 #[tauri::command]
 fn get_all_lists() -> Result<Vec<storage::ShortcutList>, String> {
@@ -135,6 +141,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             greet,
             get_active_application,
+            get_active_window_title,
             get_all_lists,
             save_list,
             delete_list,
