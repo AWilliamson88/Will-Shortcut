@@ -177,8 +177,6 @@ export function KeyCaptureInput({ value, onChange, placeholder, onRequestNextFie
   }, [isCapturing, currentKeys, capturedSequence, onChange]);
 
   // Build display value showing sequence + current keys
-  console.log("display value showing");
-  console.log("Captured Sequence: ", capturedSequence);
   const displayValue = isCapturing
     ? [...capturedSequence, currentKeys].filter(Boolean).join(', ')
     : value;
