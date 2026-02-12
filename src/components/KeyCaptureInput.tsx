@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { Keyboard, Type } from 'lucide-react';
 
 interface KeyCaptureInputProps {
   value: string;
@@ -8,15 +9,17 @@ interface KeyCaptureInputProps {
 }
 
 export function KeyCaptureInput({ value, onChange, placeholder, onRequestNextField }: KeyCaptureInputProps) {
-  const [isCapturing, setIsCapturing] = useState(false);
-  const [currentKeys, setCurrentKeys] = useState<string>('');
-  const [capturedSequence, setCapturedSequence] = useState<string[]>([]);
-  const inputRef = useRef<HTMLInputElement>(null);
+	  const [isCaptureMode, setIsCaptureMode] = useState(true); // true = capture, false = plain text
+	  const [isCapturing, setIsCapturing] = useState(false);
+    const [currentKeys, setCurrentKeys] = useState<string>('');
+    const [capturedSequence, setCapturedSequence] = useState<string[]>([]);
+    const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    if (!isCapturing) {
-      return;
-    }
+	  useEffect(() => {
+	    // Only attach listeners while actively capturing in capture mode
+	    if (!isCapturing || !isCaptureMode) {
+	      return;
+	    }
 
     const handleKeyDown = (e: KeyboardEvent) => {
       e.preventDefault();
@@ -90,8 +93,6 @@ export function KeyCaptureInput({ value, onChange, placeholder, onRequestNextFie
 
       const keys: string[] = [];
 
-      
-      
       if (!['Control', 'Shift', 'Alt', 'Meta'].includes(mainKey)) {
         // Add modifiers
         if (e.ctrlKey) keys.push('Ctrl');
@@ -99,41 +100,65 @@ export function KeyCaptureInput({ value, onChange, placeholder, onRequestNextFie
         if (e.altKey) keys.push('Alt');
         if (e.metaKey) keys.push('Win');
 
-        console.log("Mainkey: ", mainKey);
-        console.log("Keys: ", keys);
-        // Capitalize single letters
-        if (mainKey.length === 1) {
-          console.log("Push Mainkey");
-          keys.push(mainKey.toUpperCase());
-        } else {
-          console.log("Push special key");
-          // Handle special keys
-          const specialKeyMap: { [key: string]: string } = {
-            ' ': 'Space',
-            'Enter': 'Enter',
-            'Escape': 'Esc',
-            'Backspace': 'Backspace',
-            'Delete': 'Delete',
-            'Tab': 'Tab',
-            'ArrowUp': 'Up',
-            'ArrowDown': 'Down',
-            'ArrowLeft': 'Left',
-            'ArrowRight': 'Right',
-            '`': '`',
-            '-': '-',
-            '=': '=',
-            '[': '[',
-            ']': ']',
-            '\\': '\\',
-            ';': ';',
-            "'": "'",
-            ',': ',',
-            '.': '.',
-            '/': '/',
-          };
+        // Normalise the main key so Shift does not change the base character
+        // (e.g. Ctrl+Shift+"\\" should be shown as Ctrl+Shift+\\, not Ctrl+Shift+|)
 
-          keys.push(specialKeyMap[mainKey] || mainKey);
+        // First handle non-character special keys by their `key` value
+        const specialKeyMap: { [key: string]: string } = {
+          ' ': 'Space',
+          Enter: 'Enter',
+          Escape: 'Esc',
+          Backspace: 'Backspace',
+          Delete: 'Delete',
+          Tab: 'Tab',
+          ArrowUp: '↑',
+          ArrowDown: '↓',
+          ArrowLeft: '←',
+          ArrowRight: '→',
+        };
+
+        // Printable keys where Shift normally changes the symbol – use `code`
+        // to map back to the unshifted/base key.
+        const printableFromCode: { [code: string]: string } = {
+          Backquote: '`',
+          Minus: '-',
+          Equal: '=',
+          BracketLeft: '[',
+          BracketRight: ']',
+          Backslash: '\\',
+          Semicolon: ';',
+          Quote: "'",
+          Comma: ',',
+          Period: '.',
+          Slash: '/',
+          Digit0: '0',
+          Digit1: '1',
+          Digit2: '2',
+          Digit3: '3',
+          Digit4: '4',
+          Digit5: '5',
+          Digit6: '6',
+          Digit7: '7',
+          Digit8: '8',
+          Digit9: '9',
+        };
+
+        let keyLabel: string;
+
+        if (mainKey in specialKeyMap) {
+          keyLabel = specialKeyMap[mainKey];
+        } else if (printableFromCode[(e as KeyboardEvent).code]) {
+          // Use the unshifted printable symbol based on the physical key
+          keyLabel = printableFromCode[(e as KeyboardEvent).code];
+        } else if (mainKey.length === 1) {
+          // Letters and any other single-char keys that aren't in the map
+          keyLabel = mainKey.toUpperCase();
+        } else {
+          // Fallback: use the raw key name
+          keyLabel = mainKey;
         }
+
+        keys.push(keyLabel);
       }
 
       // Update the display in real-time
@@ -167,50 +192,85 @@ export function KeyCaptureInput({ value, onChange, placeholder, onRequestNextFie
       onChange(finalValue);
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
+	    window.addEventListener('keydown', handleKeyDown);
+	    window.addEventListener('keyup', handleKeyUp);
+	
+	    return () => {
+	      window.removeEventListener('keydown', handleKeyDown);
+	      window.removeEventListener('keyup', handleKeyUp);
+	    };
+	  }, [isCapturing, isCaptureMode, currentKeys, capturedSequence, onChange]);
 
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
-    };
-  }, [isCapturing, currentKeys, capturedSequence, onChange]);
+	  // Build display value showing sequence + current keys (only in capture mode)
+	  const displayValue = isCaptureMode && isCapturing
+	    ? [...capturedSequence, currentKeys].filter(Boolean).join(', ')
+	    : value;
+	
+	  const showPrompt = isCaptureMode && isCapturing && capturedSequence.length === 0 && !currentKeys;
 
-  // Build display value showing sequence + current keys
-  const displayValue = isCapturing
-    ? [...capturedSequence, currentKeys].filter(Boolean).join(', ')
-    : value;
-
-  const showPrompt = isCapturing && capturedSequence.length === 0 && !currentKeys;
-
-  return (
-    <div className="relative">
-      <input
-        ref={inputRef}
-        type="text"
-        value={displayValue}
-        onChange={(e) => {
-          if (!isCapturing) {
-            onChange(e.target.value);
-          }
-        }}
-        onFocus={() => setIsCapturing(true)}
-        onBlur={() => {
-          setIsCapturing(false);
-          setCurrentKeys('');
-          setCapturedSequence([]);
-        }}
-        placeholder={placeholder || "Click to capture or type manually"}
-        readOnly={isCapturing}
-        className={`w-full bg-gray-900 text-white px-3 py-2 rounded border ${
-          isCapturing ? 'border-blue-500' : 'border-gray-700'
-        } focus:outline-none ${isCapturing ? 'cursor-pointer' : 'cursor-text'}`}
-      />
-      {showPrompt && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-900 bg-opacity-90 rounded pointer-events-none">
-          <span className="text-sm text-blue-400">Press any key combination...</span>
-        </div>
-      )}
-    </div>
-  );
+	  return (
+	    <div className="flex items-center gap-2">
+	      <div className="relative flex-1">
+	        <input
+	          ref={inputRef}
+	          type="text"
+	          value={displayValue}
+	          onChange={(e) => {
+	            // In plain text mode, always allow manual editing
+	            if (!isCaptureMode) {
+	              onChange(e.target.value);
+	            }
+	          }}
+	          onFocus={() => {
+	            if (isCaptureMode) {
+	              setIsCapturing(true);
+	            }
+	          }}
+	          onBlur={() => {
+	            if (isCaptureMode) {
+	              setIsCapturing(false);
+	              setCurrentKeys('');
+	              setCapturedSequence([]);
+	            }
+	          }}
+	          placeholder={
+	            placeholder ||
+	            (isCaptureMode
+	              ? 'Click to capture'
+	              : 'Type key combination (e.g. Ctrl+Shift+[ )')
+	          }
+	          readOnly={isCaptureMode && isCapturing}
+	          className={`w-full bg-gray-900 text-white px-3 py-2 rounded border ${
+	            isCaptureMode && isCapturing ? 'border-blue-500' : 'border-gray-700'
+	          } focus:outline-none ${
+	            isCaptureMode && isCapturing ? 'cursor-pointer' : 'cursor-text'
+	          }`}
+	        />
+	        {showPrompt && (
+	          <div className="absolute inset-0 flex items-center justify-center bg-gray-900 bg-opacity-90 rounded pointer-events-none">
+	            <span className="text-sm text-blue-400">Press any key combination...</span>
+	          </div>
+	        )}
+	      </div>
+	      {/* Mode toggle button, now outside the input field */}
+	      <button
+	        type="button"
+	        onClick={() => {
+	          setIsCapturing(false);
+	          setCurrentKeys('');
+	          setCapturedSequence([]);
+	          setIsCaptureMode((prev) => !prev);
+	          inputRef.current?.focus();
+	        }}
+	        className="inline-flex items-center justify-center p-2 rounded border border-gray-700 bg-gray-900 text-gray-300 hover:bg-gray-800 hover:text-gray-100"
+	        title={isCaptureMode ? 'Switch to manual entry' : 'Switch to key capture'}
+	      >
+	        {isCaptureMode ? (
+	          <Keyboard className="w-4 h-4" />
+	        ) : (
+	          <Type className="w-4 h-4" />
+	        )}
+	      </button>
+	    </div>
+	  );
 }
