@@ -6,14 +6,15 @@ import { Keyboard, Settings as SettingsIcon, Plus, Edit2 } from 'lucide-react';
 import { ShortcutModal } from './ShortcutModal';
 import { v4 as uuidv4 } from 'uuid';
 import { ListManageModal } from './ListManageModal';
+import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 
 export function Popup() {
-  const { lists, applications, activeApp, loading, error, saveList, deleteList, dumpApps } = useShortcuts();
-  const [selectedList, setSelectedList] = useState<ShortcutList | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingShortcut, setEditingShortcut] = useState<Shortcut | undefined>(undefined);
-  const [detectedActiveApp, setDetectedActiveApp] = useState<string>('');
-  const [isListModalOpen, setIsListModalOpen] = useState(false);
+	  const { lists, applications, activeApp, loading, error, saveList, deleteList, dumpApps, settings, saveSettings } = useShortcuts();
+	  const [selectedList, setSelectedList] = useState<ShortcutList | null>(null);
+	  const [isModalOpen, setIsModalOpen] = useState(false);
+	  const [editingShortcut, setEditingShortcut] = useState<Shortcut | undefined>(undefined);
+	  const [detectedActiveApp, setDetectedActiveApp] = useState<string>('');
+	  const [isListModalOpen, setIsListModalOpen] = useState(false);
 
   // Listen for active app detection event
   useEffect(() => {
@@ -65,6 +66,16 @@ export function Popup() {
       unlistenPromise.then(unlisten => unlisten());
     };
   }, []);
+
+  const openSettingsWindow = async () => {
+    let w = await WebviewWindow.getByLabel("settings");
+    if (!w)  {
+      console.error("Settings window not found (did you add it to tauri.conf.json?)");
+      return;
+    }
+    await w.show();
+    await w.setFocus();
+  };
 
   const handleAddShortcut = () => {
     setEditingShortcut(undefined);
@@ -153,6 +164,7 @@ export function Popup() {
   };
 
 
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-900 text-white">
@@ -218,12 +230,14 @@ export function Popup() {
         >
           <Edit2 className="w-4 h-4 text-gray-300" />
         </button>
-        <button
-          // className="p-1 hover:bg-gray-800 rounded"
-          className="p-2 bg-gray-800 border border-gray-700 rounded hover:bg-gray-700"
-        >
-          <SettingsIcon className="w-4 h-4" />
-        </button>
+	        <button
+	          type="button"
+            onClick={openSettingsWindow}
+	          className="p-2 bg-gray-800 border border-gray-700 rounded hover:bg-gray-700"
+	          title="Settings"
+	        >
+	          <SettingsIcon className="w-4 h-4" />
+	        </button>
       </div>
 
       {/* Shortcuts List */}
@@ -238,12 +252,17 @@ export function Popup() {
                   onClick={() => handleEditShortcut(shortcut)}
                   className={`bg-gray-${index % 2 === 0 ? '7' : '8'}00 px-1 hover:bg-gray-600 transition-colors cursor-pointer`}
                 >
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="text-sm text-gray-300">{shortcut.description}</span>
-                    <kbd className="px-2 py-1 rounded text-base font-mono">
-                      {shortcut.key_combo}
-                    </kbd>
-                  </div>
+	                  <div className="flex items-center justify-between gap-1">
+	                    <span className="text-sm text-gray-300">{shortcut.description}</span>
+	                    <kbd className="px-2 py-1 rounded text-base font-mono text-right">
+	                      {shortcut.key_combo.split(',').map((part, idx, arr) => (
+	                        <span key={idx} className="whitespace-nowrap">
+	                          {part.trim()}
+	                          {idx < arr.length - 1 ? ', ' : ''}
+	                        </span>
+	                      ))}
+	                    </kbd>
+	                  </div>
                 </div>
               ))}
           </div>
