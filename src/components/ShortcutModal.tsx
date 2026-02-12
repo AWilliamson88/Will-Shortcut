@@ -158,7 +158,7 @@ interface ShortcutModalProps {
 	            onClose();
 	          }}
 	          title="Delete Shortcut"
-	          message="Are you sure you want to delete this shortcut? This action cannot be undone."
+	          message="This cannot be undone."
 	        />
 	      )}
     </div>
