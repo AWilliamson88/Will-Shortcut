@@ -32,15 +32,10 @@ export interface KeyboardShortcuts {
   add_new: string;
 }
 
-export interface WindowPosition {
-  horizontal: 'Left' | 'Right';
-  vertical: 'Top' | 'Bottom';
-}
-
 export interface Settings {
   global_hotkey: string;
   always_on_top: boolean;
   run_on_startup: boolean;
   keyboard_shortcuts: KeyboardShortcuts;
-  window_position: WindowPosition;
+  window_position: string;
 }
