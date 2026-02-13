@@ -194,7 +194,7 @@ export function Popup() {
       <div className="px-2 border-b border-gray-700 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Keyboard className="w-5 h-5" />
-          <h1 className="text-lg font-semibold">Shortcuts</h1>
+          <h1 className="text-lg font-semibold">Will-Shortcut</h1>
         </div>
       </div>
 
