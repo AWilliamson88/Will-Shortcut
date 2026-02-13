@@ -211,16 +211,44 @@ pub fn run() {
                                         let screen_size = monitor.size();
 
                                         if let Ok(window_size) = window.outer_size() {
-                                            // Position at right side of screen, bottom aligned flush with taskbar
-                                            // Taskbar height on Windows is typically 40-48px
                                             let taskbar_height = 40;
-                                            // Windows has an invisible border even on frameless windows (~8px)
                                             let border_offset = 8;
 
-                                            // Right side, flush with edge (compensate for invisible border)
-                                            let x = monitor_pos.x + screen_size.width as i32 - window_size.width as i32 + border_offset;
-                                            // Bottom, flush with taskbar
-                                            let y = monitor_pos.y + screen_size.height as i32 - window_size.height as i32 - taskbar_height;
+                                            // Load settings to decide which corner to use
+                                            let settings = crate::storage::load_settings().unwrap_or_else(|_| storage::Settings {
+                                                // simple fallback if load fails
+                                                global_hotkey: "CommandOrControl+Shift+K".into(),
+                                                always_on_top: true,
+                                                run_on_startup: false,
+                                                keyboard_shortcuts: storage::KeyboardShortcuts {
+                                                    move_up: "Control+Up".into(),
+                                                    move_down: "Control+Down".into(),
+                                                    duplicate: "Control+D".into(),
+                                                    delete: "Delete".into(),
+                                                    add_new: "Control+N".into(),
+                                                },
+                                                window_position: "BottomRight".into(),
+                                            });
+
+                                            let (x, y) = match settings.window_position.as_str() {
+                                                "TopLeft" => (
+                                                    monitor_pos.x - border_offset,
+                                                    monitor_pos.y,
+                                                ),
+                                                "TopRight" => (
+                                                    monitor_pos.x + screen_size.width as i32 - window_size.width as i32 + border_offset,
+                                                    monitor_pos.y,
+                                                ),
+                                                "BottomLeft" => (
+                                                    monitor_pos.x - border_offset,
+                                                    monitor_pos.y + screen_size.height as i32 - window_size.height as i32 - taskbar_height,
+                                                ),
+                                                // default: BottomRight
+                                                _ => (
+                                                    monitor_pos.x + screen_size.width as i32 - window_size.width as i32 + border_offset,
+                                                    monitor_pos.y + screen_size.height as i32 - window_size.height as i32 - taskbar_height,
+                                                ),
+                                            };
 
                                             let _ = window.set_position(PhysicalPosition::new(x, y));
                                         }

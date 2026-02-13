@@ -40,12 +40,18 @@ pub struct KeyboardShortcuts {
     pub add_new: String,
 }
 
+fn default_window_position() -> String {
+    "BottomRight".to_string()
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Settings {
     pub global_hotkey: String,
     pub always_on_top: bool,
     pub run_on_startup: bool,
     pub keyboard_shortcuts: KeyboardShortcuts,
+    #[serde(default = "default_window_position")]
+    pub window_position: String,
 }
 
 const APP_APPLICATIONS_JSON: &str = include_str!("applications.json");
@@ -103,6 +109,7 @@ pub fn load_settings() -> Result<Settings, String> {
                 delete: "Delete".to_string(),
                 add_new: "Control+N".to_string(),
             },
+            window_position: default_window_position(),
         })
     }
 }
