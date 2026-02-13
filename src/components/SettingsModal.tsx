@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
-import type { Settings, WindowPosition } from '../types';
+import type { Settings } from '../types';
 import { KeyCaptureInput } from './KeyCaptureInput';
 
 interface SettingsModalProps {
@@ -12,26 +12,21 @@ interface SettingsModalProps {
 
 export function SettingsModal({ isOpen, settings, onClose, onSave }: SettingsModalProps) {
   const [localSettings, setLocalSettings] = useState<Settings | null>(settings);
+  const [windowPosition, setWindowPosition] = useState<string>("BottomRight");
 
   useEffect(() => {
     if (isOpen && settings) {
       setLocalSettings(settings);
+    setWindowPosition(settings.window_position ?? "BottomRight");
     }
   }, [isOpen, settings]);
 
   if (!isOpen || !localSettings) return null;
 
-  const updateWindowPosition = (updates: Partial<WindowPosition>) => {
-    setLocalSettings((prev) =>
-      prev
-        ? {
-            ...prev,
-            window_position: {
-              ...prev.window_position,
-              ...updates,
-            },
-          }
-        : prev
+  const handleWindowPositionChange = (pos: string) => {
+    setWindowPosition(pos);
+    setLocalSettings(prev =>
+      prev ? { ...prev, window_position: pos } : prev
     );
   };
 
@@ -42,11 +37,11 @@ export function SettingsModal({ isOpen, settings, onClose, onSave }: SettingsMod
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-gray-800 rounded-lg p-6 w-full max-w-xl border border-gray-700">
+    <div className="fixed inset-0 bg-gray-800 items-center justify-center z-50 border border-gray-700">
+      <div className='flex flex-col p-4'>
         {/* Header */}
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-semibold text-white">Settings</h2>
+        <div className="flex justify-between mb-6">
+          <h2 className="text-3xl font-semibold text-white">Settings</h2>
           <button onClick={onClose} className="p-1 hover:bg-gray-700 rounded">
             <X className="w-4 h-4 text-gray-400" />
           </button>
@@ -68,41 +63,53 @@ export function SettingsModal({ isOpen, settings, onClose, onSave }: SettingsMod
           </div>
 
           {/* Window position */}
-          <div>
-            <label className="block text-xs text-gray-300 mb-2">Popup position</label>
-            <div className="flex gap-3">
-              <div className="flex-1">
-                <div className="text-[11px] text-gray-400 mb-1">Horizontal</div>
-                <div className="flex gap-2">
-                  {['Left', 'Right'].map((side) => (
+          <div className='flex flex-col gap-4'>
+            <label className="block text-xs text-gray-300">Popup position</label>
+              <div className="bg-neutral-900 h-40 w-40 p-2">
+                <div className="h-full w-full bg-neutral-800 p-1">
+
+                <div className="grid grid-cols-2 gap-x-16 gap-y-5 h-full ">
+
                     <button
-                      key={side}
+                      key={"TopLeft"}
                       type="button"
-                      onClick={() => {}}
-                      className={`flex-1 px-2 py-1 rounded text-xs border transition-colors `}
-                    >
-                      {side}
+                      onClick={() => handleWindowPositionChange("TopLeft")}
+                      className={windowPosition == "TopLeft" ? `bg-gray-900 border border-neutral-700` : `bg-neutral-900`}
+                      >
                     </button>
-                  ))}
-                </div>
-              </div>
-              <div className="flex-1">
-                <div className="text-[11px] text-gray-400 mb-1">Vertical</div>
-                <div className="flex gap-2">
-                  {['Top', 'Bottom'].map((pos) => (
                     <button
-                      key={pos}
+                      key={"TopRight"}
                       type="button"
-                      onClick={() => {}}
-                      className={`flex-1 px-2 py-1 rounded text-xs border transition-colors `}
-                    >
-                      {pos}
+                      onClick={() => handleWindowPositionChange("TopRight")}
+                      className={windowPosition == "TopRight" ? `bg-gray-900 border border-neutral-700` : `bg-neutral-900`}
+                      >
                     </button>
-                  ))}
-                </div>
+                    <button
+                      key={"BottomLeft"}
+                      type="button"
+                      onClick={() => handleWindowPositionChange("BottomLeft")}
+                      className={windowPosition == "BottomLeft" ? `bg-gray-900 border border-neutral-700` : `bg-neutral-900`}
+                      >
+                    </button>
+                    <button
+                      key={"BottomRight"}
+                      type="button"
+                      onClick={() => handleWindowPositionChange("BottomRight")}
+                      className={windowPosition == "BottomRight" ? `bg-gray-900 border border-neutral-700` : `bg-neutral-900`}
+                      >
+                    </button>
+                      </div>
+                  </div>
               </div>
-            </div>
           </div>
+
+          {/* <div className="grid h-56 grid-cols-3 content-between gap-4 ...">
+            <div>01</div>
+            <div>02</div>
+            <div>03</div>
+            <div>04</div>
+            <div>05</div>
+          </div> */}
 
           {/* Actions */}
           <div className="flex justify-end gap-2 pt-2">
