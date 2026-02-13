@@ -10,8 +10,8 @@ export function SettingsApp() {
     <SettingsModal
       isOpen={true}
       settings={settings}
-      onClose={() => getCurrentWebviewWindow().close()}
-      onSave={async s => { await saveSettings(s); getCurrentWebviewWindow().close(); }}
+      onClose={() => getCurrentWebviewWindow().hide()}
+      onSave={async s => { await saveSettings(s); getCurrentWebviewWindow().hide(); }}
     />
   );
 }
