@@ -1,7 +1,7 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
+mod defaults;
 mod storage;
 mod window_detection;
-mod defaults;
 
 use tauri::Emitter;
 
@@ -32,14 +32,14 @@ fn get_all_lists() -> Result<Vec<storage::ShortcutList>, String> {
 #[tauri::command]
 fn save_list(list: storage::ShortcutList) -> Result<(), String> {
     let mut lists = storage::load_lists()?;
-    
+
     // Find and update existing list, or add new one
     if let Some(index) = lists.iter().position(|l| l.id == list.id) {
         lists[index] = list;
     } else {
         lists.push(list);
     }
-    
+
     storage::save_lists(&lists)
 }
 
@@ -116,22 +116,35 @@ fn toggle_window(window: tauri::Window) -> Result<(), String> {
     Ok(())
 }
 
+#[tauri::command]
+fn refresh_global_hotkey(app: tauri::AppHandle) -> Result<(), String> {
+    use tauri_plugin_global_shortcut::GlobalShortcutExt;
+
+    let settings = crate::storage::load_settings().map_err(|e| e.to_string())?;
+
+    app.global_shortcut()
+        .unregister_all()
+        .map_err(|e| e.to_string())?;
+
+    register_global_hotkey(&app, settings.global_hotkey.as_str())
+}
+
 // Position window in bottom-right corner
 fn position_window_bottom_right(window: &tauri::Window) -> Result<(), String> {
     if let Some(monitor) = window.current_monitor().map_err(|e| e.to_string())? {
         let screen_size = monitor.size();
         let window_size = window.outer_size().map_err(|e| e.to_string())?;
-        
+
         // Calculate position (20px margin from edges)
         let x = screen_size.width as i32 - window_size.width as i32 - 20;
         let y = screen_size.height as i32 - window_size.height as i32 - 20;
-        
-        window.set_position(PhysicalPosition::new(x, y))
+
+        window
+            .set_position(PhysicalPosition::new(x, y))
             .map_err(|e| e.to_string())?;
     }
     Ok(())
 }
-
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -151,71 +164,118 @@ pub fn run() {
             save_settings,
             initialize_defaults,
             toggle_window,
-            debug_dump_applications
-            ])
-            .setup(|app| {
-                use tauri_plugin_global_shortcut::GlobalShortcutExt;
-                use active_win_pos_rs::get_active_window;
+            debug_dump_applications,
+            refresh_global_hotkey
+        ])
+        .setup(|app| {
+            use active_win_pos_rs::get_active_window;
+            use tauri_plugin_global_shortcut::GlobalShortcutExt;
 
-                // Register global hotkey
-                let handle = app.handle().clone();
-                app.global_shortcut().on_shortcut("CommandOrControl+Shift+K", move |_app, _shortcut, event| {
-                    // Only trigger on key press, not release
-                    if event.state == tauri_plugin_global_shortcut::ShortcutState::Pressed {
-                        if let Some(window) = handle.get_webview_window("main") {
-                            // Toggle window visibility directly
-                            if let Ok(is_visible) = window.is_visible() {
-                               if is_visible {
-                                    let _ = window.emit("popup-hidden", true);
-                                    let _ = window.hide();
+            // Load settings once at startup
+            let settings = crate::storage::load_settings().unwrap_or_else(|_| {
+                storage::Settings {
+                    // simple fallback if load fails
+                    global_hotkey: "CommandOrControl+Shift+K".into(),
+                    always_on_top: true,
+                    run_on_startup: false,
+                    keyboard_shortcuts: storage::KeyboardShortcuts {
+                        move_up: "Control+Up".into(),
+                        move_down: "Control+Down".into(),
+                        duplicate: "Control+D".into(),
+                        delete: "Delete".into(),
+                        add_new: "Control+N".into(),
+                    },
+                    window_position: "BottomRight".into(),
+                }
+            });
+
+            // Register global hotkey using helper
+            let app_handle = app.handle().clone();
+            register_global_hotkey(&app_handle, settings.global_hotkey.as_str())?;
+
+            Ok(())
+        })
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
+}
+
+fn register_global_hotkey(app: &tauri::AppHandle, hotkey: &str) -> Result<(), String> {
+    use active_win_pos_rs::get_active_window;
+    use tauri_plugin_global_shortcut::GlobalShortcutExt;
+
+    let handle = app.clone();
+
+    app.global_shortcut()
+        .on_shortcut(hotkey, move |_app, _shortcut, event| {
+            // ⬅ paste your existing toggle logic here
+            // Only trigger on key press, not release
+            if event.state == tauri_plugin_global_shortcut::ShortcutState::Pressed {
+                if let Some(window) = handle.get_webview_window("main") {
+                    // Toggle window visibility directly
+                    if let Ok(is_visible) = window.is_visible() {
+                        if is_visible {
+                            if let Some(settings_window) = handle.get_webview_window("settings") {
+                                let _ = settings_window.hide();
+                            }
+                            let _ = window.emit("popup-hidden", true);
+                            let _ = window.hide();
+                        } else {
+                            // Get the active app BEFORE showing the window
+                            if let Ok(active_app_name) =
+                                crate::window_detection::get_active_application()
+                            {
+                                let _ = window.emit("active-app-detected", active_app_name);
+                            }
+
+                            // Get the monitor where the active window is located
+                            let target_monitor = if let Ok(active_win) = get_active_window() {
+                                // Get all monitors and find which one contains the active window
+                                if let Ok(monitors) = window.available_monitors() {
+                                    monitors.into_iter().find(|monitor| {
+                                        let pos = monitor.position();
+                                        let size = monitor.size();
+                                        let monitor_x = pos.x;
+                                        let monitor_y = pos.y;
+                                        let monitor_width = size.width as i32;
+                                        let monitor_height = size.height as i32;
+
+                                        // Check if active window center is within this monitor
+                                        let active_center_x = (active_win.position.x
+                                            + active_win.position.width / 2.0)
+                                            as i32;
+                                        let active_center_y = (active_win.position.y
+                                            + active_win.position.height / 2.0)
+                                            as i32;
+
+                                        active_center_x >= monitor_x
+                                            && active_center_x < monitor_x + monitor_width
+                                            && active_center_y >= monitor_y
+                                            && active_center_y < monitor_y + monitor_height
+                                    })
                                 } else {
-                                    // Get the active app BEFORE showing the window
-                                    if let Ok(active_app_name) = crate::window_detection::get_active_application() {
-                                        let _ = window.emit("active-app-detected", active_app_name);
-                                    }
+                                    None
+                                }
+                            } else {
+                                None
+                            };
 
-                                    // Get the monitor where the active window is located
-                                    let target_monitor = if let Ok(active_win) = get_active_window() {
-                                        // Get all monitors and find which one contains the active window
-                                        if let Ok(monitors) = window.available_monitors() {
-                                            monitors.into_iter().find(|monitor| {
-                                                let pos = monitor.position();
-                                                let size = monitor.size();
-                                                let monitor_x = pos.x;
-                                                let monitor_y = pos.y;
-                                                let monitor_width = size.width as i32;
-                                                let monitor_height = size.height as i32;
+                            // Use the detected monitor or fall back to current monitor
+                            let monitor =
+                                target_monitor.or_else(|| window.current_monitor().ok().flatten());
 
-                                                // Check if active window center is within this monitor
-                                                let active_center_x = (active_win.position.x + active_win.position.width / 2.0) as i32;
-                                                let active_center_y = (active_win.position.y + active_win.position.height / 2.0) as i32;
+                            // Position and show
+                            if let Some(monitor) = monitor {
+                                let monitor_pos = monitor.position();
+                                let screen_size = monitor.size();
 
-                                                active_center_x >= monitor_x &&
-                                                active_center_x < monitor_x + monitor_width &&
-                                                active_center_y >= monitor_y &&
-                                                active_center_y < monitor_y + monitor_height
-                                            })
-                                        } else {
-                                            None
-                                        }
-                                    } else {
-                                        None
-                                    };
+                                if let Ok(window_size) = window.outer_size() {
+                                    let taskbar_height = 40;
+                                    let border_offset = 8;
 
-                                    // Use the detected monitor or fall back to current monitor
-                                    let monitor = target_monitor.or_else(|| window.current_monitor().ok().flatten());
-
-                                    // Position and show
-                                    if let Some(monitor) = monitor {
-                                        let monitor_pos = monitor.position();
-                                        let screen_size = monitor.size();
-
-                                        if let Ok(window_size) = window.outer_size() {
-                                            let taskbar_height = 40;
-                                            let border_offset = 8;
-
-                                            // Load settings to decide which corner to use
-                                            let settings = crate::storage::load_settings().unwrap_or_else(|_| storage::Settings {
+                                    // Load settings to decide which corner to use
+                                    let settings =
+                                        crate::storage::load_settings().unwrap_or_else(|_| {
+                                            storage::Settings {
                                                 // simple fallback if load fails
                                                 global_hotkey: "CommandOrControl+Shift+K".into(),
                                                 always_on_top: true,
@@ -228,41 +288,43 @@ pub fn run() {
                                                     add_new: "Control+N".into(),
                                                 },
                                                 window_position: "BottomRight".into(),
-                                            });
+                                            }
+                                        });
 
-                                            let (x, y) = match settings.window_position.as_str() {
-                                                "TopLeft" => (
-                                                    monitor_pos.x - border_offset,
-                                                    monitor_pos.y,
-                                                ),
-                                                "TopRight" => (
-                                                    monitor_pos.x + screen_size.width as i32 - window_size.width as i32 + border_offset,
-                                                    monitor_pos.y,
-                                                ),
-                                                "BottomLeft" => (
-                                                    monitor_pos.x - border_offset,
-                                                    monitor_pos.y + screen_size.height as i32 - window_size.height as i32 - taskbar_height,
-                                                ),
-                                                // default: BottomRight
-                                                _ => (
-                                                    monitor_pos.x + screen_size.width as i32 - window_size.width as i32 + border_offset,
-                                                    monitor_pos.y + screen_size.height as i32 - window_size.height as i32 - taskbar_height,
-                                                ),
-                                            };
+                                    let (x, y) = match settings.window_position.as_str() {
+                                        "TopLeft" => (monitor_pos.x - border_offset, monitor_pos.y),
+                                        "TopRight" => (
+                                            monitor_pos.x + screen_size.width as i32
+                                                - window_size.width as i32
+                                                + border_offset,
+                                            monitor_pos.y,
+                                        ),
+                                        "BottomLeft" => (
+                                            monitor_pos.x - border_offset,
+                                            monitor_pos.y + screen_size.height as i32
+                                                - window_size.height as i32
+                                                - taskbar_height,
+                                        ),
+                                        // default: BottomRight
+                                        _ => (
+                                            monitor_pos.x + screen_size.width as i32
+                                                - window_size.width as i32
+                                                + border_offset,
+                                            monitor_pos.y + screen_size.height as i32
+                                                - window_size.height as i32
+                                                - taskbar_height,
+                                        ),
+                                    };
 
-                                            let _ = window.set_position(PhysicalPosition::new(x, y));
-                                        }
-                                    }
-                                    let _ = window.show();
-                                    let _ = window.set_focus();
+                                    let _ = window.set_position(PhysicalPosition::new(x, y));
                                 }
                             }
+                            let _ = window.show();
+                            let _ = window.set_focus();
                         }
                     }
-                })?;
-
-                Ok(())
-            })
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+                }
+            }
+        })
+        .map_err(|e| e.to_string())
 }

@@ -76,6 +76,7 @@ export function useShortcuts() {
   const saveSettings = async (newSettings: Settings) => {
     try {
       await invoke('save_settings', { settings: newSettings });
+      await invoke('refresh_global_hotkey');
       setSettings(newSettings);
     } catch (err) {
       setError(err as string);
