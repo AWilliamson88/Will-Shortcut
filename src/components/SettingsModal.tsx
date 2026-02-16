@@ -17,7 +17,7 @@ export function SettingsModal({ isOpen, settings, onClose, onSave }: SettingsMod
   useEffect(() => {
     if (isOpen && settings) {
       setLocalSettings(settings);
-    setWindowPosition(settings.window_position ?? "BottomRight");
+      setWindowPosition(settings.window_position ?? "BottomRight");
     }
   }, [isOpen, settings]);
 
@@ -56,6 +56,7 @@ export function SettingsModal({ isOpen, settings, onClose, onSave }: SettingsMod
               onChange={(value) =>
                 setLocalSettings((prev) => (prev ? { ...prev, global_hotkey: value } : prev))
               }
+              disableToggle={true}
             />
             <p className="mt-1 text-[11px] text-gray-400">
               Changes to the global hotkey take effect the next time you restart the app.
