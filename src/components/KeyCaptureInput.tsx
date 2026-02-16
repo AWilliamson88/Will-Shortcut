@@ -5,10 +5,11 @@ interface KeyCaptureInputProps {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
-  onRequestNextField?: () => void; // new
+  onRequestNextField?: () => void; 
+  disableToggle?: boolean;
 }
 
-export function KeyCaptureInput({ value, onChange, placeholder, onRequestNextField }: KeyCaptureInputProps) {
+export function KeyCaptureInput({ value, onChange, placeholder, onRequestNextField, disableToggle = false }: KeyCaptureInputProps) {
 	  const [isCaptureMode, setIsCaptureMode] = useState(true); // true = capture, false = plain text
 	  const [isCapturing, setIsCapturing] = useState(false);
     const [currentKeys, setCurrentKeys] = useState<string>('');
@@ -253,24 +254,26 @@ export function KeyCaptureInput({ value, onChange, placeholder, onRequestNextFie
 	        )}
 	      </div>
 	      {/* Mode toggle button, now outside the input field */}
-	      <button
-	        type="button"
-	        onClick={() => {
-	          setIsCapturing(false);
-	          setCurrentKeys('');
-	          setCapturedSequence([]);
-	          setIsCaptureMode((prev) => !prev);
-	          inputRef.current?.focus();
-	        }}
-	        className="inline-flex items-center justify-center p-2 rounded border border-gray-700 bg-gray-900 text-gray-300 hover:bg-gray-800 hover:text-gray-100"
-	        title={isCaptureMode ? 'Switch to manual entry' : 'Switch to key capture'}
-	      >
-	        {isCaptureMode ? (
-	          <Keyboard className="w-4 h-4" />
-	        ) : (
-	          <Type className="w-4 h-4" />
-	        )}
-	      </button>
+        {!disableToggle && (
+          <button
+            type="button"
+            onClick={() => {
+              setIsCapturing(false);
+              setCurrentKeys('');
+              setCapturedSequence([]);
+              setIsCaptureMode((prev) => !prev);
+              inputRef.current?.focus();
+            }}
+            className="inline-flex items-center justify-center p-2 rounded border border-gray-700 bg-gray-900 text-gray-300 hover:bg-gray-800 hover:text-gray-100"
+            title={isCaptureMode ? 'Switch to manual entry' : 'Switch to key capture'}
+          >
+            {isCaptureMode ? (
+              <Keyboard className="w-4 h-4" />
+            ) : (
+              <Type className="w-4 h-4" />
+            )}
+          </button>
+        )}
 	    </div>
 	  );
 }
