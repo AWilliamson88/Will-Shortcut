@@ -7,6 +7,8 @@ import { ShortcutModal } from './ShortcutModal';
 import { v4 as uuidv4 } from 'uuid';
 import { ListManageModal } from './ListManageModal';
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
+import { currentMonitor } from "@tauri-apps/api/window";
+import { PhysicalPosition } from "@tauri-apps/api/dpi";
 
 export function Popup() {
 	  const { lists, applications, activeApp, loading, error, saveList, deleteList, dumpApps, settings, saveSettings } = useShortcuts();
@@ -55,6 +57,7 @@ export function Popup() {
     }
   }, [lists]);
 
+  // Close modals when popup is hidden
   useEffect(() => {
     const unlistenPromise = listen('popup-hidden', () => {
       setIsModalOpen(false);
@@ -67,13 +70,16 @@ export function Popup() {
     };
   }, []);
 
+  
   const openSettingsWindow = async () => {
-    let w = await WebviewWindow.getByLabel("settings");
-    if (!w)  {
-      console.error("Settings window not found (did you add it to tauri.conf.json?)");
-      return;
-    }
-    await w.show();
+    const w = await WebviewWindow.getByLabel("settings");
+    if (!w) { console.error("Settings window not found"); return; }
+    const monitor = await currentMonitor();
+    if (monitor) { const { width, height } = await w.outerSize();
+      const x = monitor.position.x + Math.round((monitor.size.width - width) / 2);
+      const y = monitor.position.y + Math.round((monitor.size.height - height) / 2);
+      await w.setPosition(new PhysicalPosition(x, y)); }
+    await w.show(); 
     await w.setFocus();
   };
 
@@ -162,8 +168,6 @@ export function Popup() {
 
     await saveList(updatedList);
   };
-
-
 
   if (loading) {
     return (
