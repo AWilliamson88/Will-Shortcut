@@ -103,7 +103,20 @@ export function SettingsModal({ isOpen, settings, onClose, onSave }: SettingsMod
                   </div>
               </div>
           </div>
-
+          <div className="flex items-center justify-between">
+            <label className="text-xs text-gray-300">
+              Run Will-Shortcut on system startup
+            </label>
+            <input
+              type="checkbox"
+              checked={localSettings.run_on_startup}
+              onChange={(e) =>
+                setLocalSettings(prev =>
+                  prev ? { ...prev, run_on_startup: e.target.checked } : prev
+                )
+              }
+            />
+          </div>
           {/* <div className="grid h-56 grid-cols-3 content-between gap-4 ...">
             <div>01</div>
             <div>02</div>

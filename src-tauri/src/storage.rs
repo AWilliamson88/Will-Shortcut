@@ -1,7 +1,7 @@
+use directories::ProjectDirs;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
-use directories::ProjectDirs;
 
 // Data structures matching our design
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -92,7 +92,7 @@ pub fn get_data_dir() -> Result<PathBuf, String> {
 pub fn load_settings() -> Result<Settings, String> {
     let data_dir = get_data_dir()?;
     let settings_path = data_dir.join("settings.json");
-    
+
     if settings_path.exists() {
         let contents = fs::read_to_string(settings_path).map_err(|e| e.to_string())?;
         serde_json::from_str(&contents).map_err(|e| e.to_string())
@@ -101,7 +101,7 @@ pub fn load_settings() -> Result<Settings, String> {
         Ok(Settings {
             global_hotkey: "CommandOrControl+Shift+K".to_string(),
             always_on_top: true,
-            run_on_startup: false,
+            run_on_startup: true,
             keyboard_shortcuts: KeyboardShortcuts {
                 move_up: "Control+Up".to_string(),
                 move_down: "Control+Down".to_string(),
@@ -126,7 +126,7 @@ pub fn save_settings(settings: &Settings) -> Result<(), String> {
 pub fn load_lists() -> Result<Vec<ShortcutList>, String> {
     let data_dir = get_data_dir()?;
     let lists_path = data_dir.join("lists.json");
-    
+
     if lists_path.exists() {
         let contents = fs::read_to_string(lists_path).map_err(|e| e.to_string())?;
         serde_json::from_str(&contents).map_err(|e| e.to_string())
@@ -148,10 +148,13 @@ pub fn load_applications() -> Result<Vec<Application>, String> {
     let mut apps: Vec<Application> =
         serde_json::from_str(APP_APPLICATIONS_JSON).map_err(|e| e.to_string())?;
     for user_app in load_user_applications()? {
-        if let Some(existing) = apps.iter_mut().find(|a| a.process_name == user_app.process_name) {
+        if let Some(existing) = apps
+            .iter_mut()
+            .find(|a| a.process_name == user_app.process_name)
+        {
             *existing = user_app; // user overrides bundled app
         } else {
-            apps.push(user_app);  // user adds new app
+            apps.push(user_app); // user adds new app
         }
     }
     Ok(apps)

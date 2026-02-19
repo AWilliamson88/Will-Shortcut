@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { ShortcutList, Application, Settings } from '../types';
+import { enable, disable } from '@tauri-apps/plugin-autostart';
 
 export function useShortcuts() {
   const [lists, setLists] = useState<ShortcutList[]>([]);
@@ -33,6 +34,19 @@ export function useShortcuts() {
       setLists(listsData);
       setApplications(appsData);
       setSettings(settingsData);
+
+      // Throws "os error 2" in dev mode so skip it.
+      if (!import.meta.env.DEV) {
+        try {
+          if (settingsData.run_on_startup) {
+            await enable();
+          } else {
+            await disable();
+          }
+        } catch (e) {
+          console.error('Failed to sync autostart on load:', e);
+        }
+      }
       setActiveApp(activeAppData);
       setError(null);
     } catch (err) {
@@ -78,6 +92,20 @@ export function useShortcuts() {
       await invoke('save_settings', { settings: newSettings });
       await invoke('refresh_global_hotkey');
       setSettings(newSettings);
+
+      
+      // Throws "os error 2" in dev mode so skip it.
+      if (!import.meta.env.DEV) {
+        try {
+          if (newSettings.run_on_startup) {
+            await enable();
+          } else {
+            await disable();
+          }
+        } catch (e) {
+          console.error('Failed to update autostart:', e);
+        }
+      }
     } catch (err) {
       setError(err as string);
       console.error('Failed to save settings:', err);

@@ -100,7 +100,12 @@ fn debug_dump_applications() -> Result<Vec<storage::Application>, String> {
     Ok(apps)
 }
 
-use tauri::{Manager, PhysicalPosition};
+use tauri::{
+    menu::{Menu, MenuItem},
+    tray::TrayIconBuilder,
+    Manager,
+    PhysicalPosition,
+};
 
 // Toggle window visibility
 #[tauri::command]
@@ -149,6 +154,7 @@ fn position_window_bottom_right(window: &tauri::Window) -> Result<(), String> {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        //.plugin(tauri_plugin_autostart::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .invoke_handler(tauri::generate_handler![
@@ -167,34 +173,79 @@ pub fn run() {
             debug_dump_applications,
             refresh_global_hotkey
         ])
-        .setup(|app| {
-            use active_win_pos_rs::get_active_window;
-            use tauri_plugin_global_shortcut::GlobalShortcutExt;
+	        .setup(|app| {
+	            #[cfg(desktop)]
+	            app.handle().plugin(tauri_plugin_autostart::init(
+	                tauri_plugin_autostart::MacosLauncher::LaunchAgent,
+	                None,
+	            ));
 
-            // Load settings once at startup
-            let settings = crate::storage::load_settings().unwrap_or_else(|_| {
-                storage::Settings {
-                    // simple fallback if load fails
-                    global_hotkey: "CommandOrControl+Shift+K".into(),
-                    always_on_top: true,
-                    run_on_startup: false,
-                    keyboard_shortcuts: storage::KeyboardShortcuts {
-                        move_up: "Control+Up".into(),
-                        move_down: "Control+Down".into(),
-                        duplicate: "Control+D".into(),
-                        delete: "Delete".into(),
-                        add_new: "Control+N".into(),
-                    },
-                    window_position: "BottomRight".into(),
-                }
-            });
+	            // Create a system tray icon with:
+	            // - Open Settings
+	            // - Quit Will-Shortcut
+	            #[cfg(desktop)]
+	            {
+	                let open_settings_item =
+	                    MenuItem::with_id(app, "open_settings", "Open Settings", true, None::<&str>)
+	                        .expect("failed to create tray Open Settings menu item");
+	                let quit_item =
+	                    MenuItem::with_id(app, "quit", "Quit Will-Shortcut", true, None::<&str>)
+	                        .expect("failed to create tray Quit menu item");
+	                let menu = Menu::with_items(app, &[&open_settings_item, &quit_item])
+	                    .expect("failed to create tray menu");
 
-            // Register global hotkey using helper
-            let app_handle = app.handle().clone();
-            register_global_hotkey(&app_handle, settings.global_hotkey.as_str())?;
+	                // Use the app icon as the tray icon
+	                let _tray = TrayIconBuilder::new()
+	                    .icon(app.default_window_icon().unwrap().clone())
+	                    .menu(&menu)
+	                    .menu_on_left_click(true)
+	                    .on_menu_event(|app, event| match event.id.as_ref() {
+	                        "open_settings" => {
+	                            if let Some(window) = app.get_webview_window("settings") {
+	                                let _ = window.show();
+	                                let _ = window.set_focus();
+	                            }
+	                        }
+	                        "quit" => {
+	                            app.exit(0);
+	                        }
+	                        _ => {
+	                            println!("Unhandled tray menu item: {:?}", event.id);
+	                        }
+	                    })
+	                    .build(app)
+	                    .expect("failed to build tray icon");
+	            }
 
-            Ok(())
-        })
+	            use active_win_pos_rs::get_active_window;
+	            use tauri_plugin_global_shortcut::GlobalShortcutExt;
+
+	            // Load settings once at startup
+	            let settings = crate::storage::load_settings().unwrap_or_else(|_| {
+	                storage::Settings {
+	                    // fallback if load fails
+	                    global_hotkey: "CommandOrControl+Shift+K".into(),
+	                    always_on_top: true,
+	                    run_on_startup: true,
+	                    keyboard_shortcuts: storage::KeyboardShortcuts {
+	                        move_up: "Control+Up".into(),
+	                        move_down: "Control+Down".into(),
+	                        duplicate: "Control+D".into(),
+	                        delete: "Delete".into(),
+	                        add_new: "Control+N".into(),
+	                    },
+	                    window_position: "BottomRight".into(),
+	                }
+	            });
+
+	            // Register global hotkey using helper
+	            let app_handle = app.handle().clone();
+	            if let Err(e) = register_global_hotkey(&app_handle, settings.global_hotkey.as_str()) {
+	                eprintln!("Failed to register global hotkey on startup: {e}");
+	            }
+
+	            Ok(())
+	        })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
@@ -279,7 +330,7 @@ fn register_global_hotkey(app: &tauri::AppHandle, hotkey: &str) -> Result<(), St
                                                 // simple fallback if load fails
                                                 global_hotkey: "CommandOrControl+Shift+K".into(),
                                                 always_on_top: true,
-                                                run_on_startup: false,
+                                                run_on_startup: true,
                                                 keyboard_shortcuts: storage::KeyboardShortcuts {
                                                     move_up: "Control+Up".into(),
                                                     move_down: "Control+Down".into(),

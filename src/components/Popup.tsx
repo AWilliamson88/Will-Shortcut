@@ -11,7 +11,7 @@ import { currentMonitor } from "@tauri-apps/api/window";
 import { PhysicalPosition } from "@tauri-apps/api/dpi";
 
 export function Popup() {
-	  const { lists, applications, activeApp, loading, error, saveList, deleteList, dumpApps, settings, saveSettings } = useShortcuts();
+	  const { lists, applications, activeApp, loading, error, saveList, deleteList, dumpApps } = useShortcuts();
 	  const [selectedList, setSelectedList] = useState<ShortcutList | null>(null);
 	  const [isModalOpen, setIsModalOpen] = useState(false);
 	  const [editingShortcut, setEditingShortcut] = useState<Shortcut | undefined>(undefined);
@@ -190,7 +190,23 @@ export function Popup() {
     );
   }
 
-  const nextOrder = selectedList ? selectedList.shortcuts.length : 0;
+	  const currentActiveApp = detectedActiveApp || activeApp;
+
+	  const hasListForCurrentApp = lists.some((list) => {
+	    const app = applications.find((a) => a.id === list.application_id);
+	    return app?.process_name === currentActiveApp;
+	  });
+
+	  const defaultNewListName = (() => {
+	    if (!currentActiveApp) return 'New list';
+	    const appForList = applications.find((app) => app.process_name === currentActiveApp);
+	    if (appForList?.name) {
+	      return `${appForList.name} shortcuts`;
+	    }
+	    return `${currentActiveApp} shortcuts`;
+	  })();
+
+	  const nextOrder = selectedList ? selectedList.shortcuts.length : 0;
 
   return (
     <div className="h-screen w-full bg-gray-900 text-white flex flex-col">
@@ -274,7 +290,11 @@ export function Popup() {
           <div className="text-center text-gray-500 mt-8">
             <Keyboard className="w-12 h-12 mx-auto mb-4 opacity-50" />
             <p>No shortcuts in this list</p>
-            <p className="text-sm mt-2">Click "Add Shortcut" to get started</p>
+	            <p className="text-sm mt-2">
+	              {hasListForCurrentApp
+	                ? 'Click "Add Shortcut" to get started'
+	                : 'Click "Create List" to get started'}
+	            </p>
           </div>
         ) : (
           <div className="text-center text-gray-500 mt-8">
@@ -285,18 +305,28 @@ export function Popup() {
         )}
       </div>
 
-      {/* Add Shortcut Button */}
-      {selectedList && (
-        <div className="px-4 py-3">
-          <button
-            onClick={handleAddShortcut}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Add Shortcut
-          </button>
-        </div>
-      )}
+	      {/* Add Shortcut / Create List Button */}
+	      {selectedList && (
+	        <div className="px-4 py-3">
+	          {hasListForCurrentApp ? (
+	            <button
+	              onClick={handleAddShortcut}
+	              className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+	            >
+	              <Plus className="w-4 h-4" />
+	              Add Shortcut
+	            </button>
+	          ) : (
+	            <button
+	              onClick={() => handleCreateList(defaultNewListName)}
+	              className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+	            >
+	              <Plus className="w-4 h-4" />
+	              Create List
+	            </button>
+	          )}
+	        </div>
+	      )}
 
       {/* Footer */}
       <div className="p-3 border-t border-gray-700 text-base text-center">
