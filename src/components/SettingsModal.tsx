@@ -40,7 +40,7 @@ export function SettingsModal({ isOpen, settings, onClose, onSave }: SettingsMod
     <div className="fixed inset-0 bg-gray-800 items-center justify-center z-50 border border-gray-700">
       <div className='flex flex-col p-4'>
         {/* Header */}
-        <div className="flex justify-between mb-6">
+        <div data-tauri-drag-region className="flex justify-between mb-6">
           <h2 className="text-3xl font-semibold text-white">Settings</h2>
           <button onClick={onClose} className="p-1 hover:bg-gray-700 rounded">
             <X className="w-4 h-4 text-gray-400" />
