@@ -9,6 +9,10 @@
     "core:window:allow-set-focus",
     "core:window:allow-close",
     "core:window:allow-hide",
-    "core:window:allow-set-position"
+    "core:window:allow-set-position",
+    "autostart:allow-enable",
+    "autostart:allow-disable",
+    "autostart:allow-is-enabled",
+    "core:window:allow-start-dragging"
   ]
 }
