@@ -224,7 +224,7 @@ pub fn run() {
 	            let settings = crate::storage::load_settings().unwrap_or_else(|_| {
 	                storage::Settings {
 	                    // fallback if load fails
-	                    global_hotkey: "CommandOrControl+Shift+K".into(),
+	                    global_hotkey: "CommandOrControl+Shift+Alt+K".into(),
 	                    always_on_top: true,
 	                    run_on_startup: true,
 	                    keyboard_shortcuts: storage::KeyboardShortcuts {
@@ -328,7 +328,7 @@ fn register_global_hotkey(app: &tauri::AppHandle, hotkey: &str) -> Result<(), St
                                         crate::storage::load_settings().unwrap_or_else(|_| {
                                             storage::Settings {
                                                 // simple fallback if load fails
-                                                global_hotkey: "CommandOrControl+Shift+K".into(),
+                                                global_hotkey: "CommandOrControl+Shift+Alt+K".into(),
                                                 always_on_top: true,
                                                 run_on_startup: true,
                                                 keyboard_shortcuts: storage::KeyboardShortcuts {
