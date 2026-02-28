@@ -100,7 +100,7 @@ pub fn load_settings() -> Result<Settings, String> {
     } else {
         // Return default settings
         Ok(Settings {
-            global_hotkey: "CommandOrControl+Shift+K".to_string(),
+            global_hotkey: "CommandOrControl+Shift+Alt+K".to_string(),
             always_on_top: true,
             run_on_startup: true,
             keyboard_shortcuts: KeyboardShortcuts {
