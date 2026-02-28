@@ -4,6 +4,7 @@ export interface Application {
   id: string;
   name: string;
   process_name: string;
+  detection_name: string;
   icon?: string;
   last_used_list_id?: string;
 }
