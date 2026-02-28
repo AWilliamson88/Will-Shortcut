@@ -4,7 +4,7 @@ import { ShortcutList, Application, Settings } from '../types';
 import { enable, disable } from '@tauri-apps/plugin-autostart';
 
 export function useShortcuts() {
-  const [lists, setLists] = useState<ShortcutList[]>([]);
+  const [shortcutLists, setShortcutLists] = useState<ShortcutList[]>([]);
   const [applications, setApplications] = useState<Application[]>([]);
   const [settings, setSettings] = useState<Settings | null>(null);
   const [activeApp, setActiveApp] = useState<string>('');
@@ -31,7 +31,7 @@ export function useShortcuts() {
         invoke<string>('get_active_window_title'),
       ]);
 
-      setLists(listsData);
+      setShortcutLists(listsData);
       setApplications(appsData);
       setSettings(settingsData);
 
@@ -136,7 +136,7 @@ export function useShortcuts() {
   };
 
   return {
-    lists,
+    shortcutLists,
     applications,
     settings,
     activeApp,
