@@ -2,6 +2,7 @@ use directories::ProjectDirs;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
+use std::collections::HashMap;
 
 // Data structures matching our design
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -89,6 +90,36 @@ pub fn get_data_dir() -> Result<PathBuf, String> {
     }
 }
 
+// Get the directory for list files
+fn lists_dir() -> Result<PathBuf, String> {
+    let mut dir = get_data_dir()?;
+    dir.push("lists");
+    fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    Ok(dir)
+}
+
+// Get the path to the lists file for a specific application
+fn lists_file_path(app_id: &str) -> Result<PathBuf, String> {
+    let mut path = lists_dir()?;
+    path.push(format!("{app_id}.json"));
+    Ok(path)
+}
+
+// Load lists for a specific application
+pub fn load_lists_for_application(app_id: &str) -> Result<Vec<ShortcutList>, String> {
+    let path = lists_file_path(app_id)?;
+    if !path.exists() {
+        return Ok(Vec::new());
+    }
+    let contents = fs::read_to_string(&path).map_err(|e| e.to_string())?;
+    let mut lists: Vec<ShortcutList> =
+        serde_json::from_str(&contents).map_err(|e| e.to_string())?;
+    for list in &mut lists {
+        list.application_id = app_id.to_string();
+    }
+    Ok(lists)
+}
+
 // Load settings from file
 pub fn load_settings() -> Result<Settings, String> {
     let data_dir = get_data_dir()?;
@@ -125,23 +156,30 @@ pub fn save_settings(settings: &Settings) -> Result<(), String> {
 
 // Load all lists
 pub fn load_lists() -> Result<Vec<ShortcutList>, String> {
-    let data_dir = get_data_dir()?;
-    let lists_path = data_dir.join("lists.json");
-
-    if lists_path.exists() {
-        let contents = fs::read_to_string(lists_path).map_err(|e| e.to_string())?;
-        serde_json::from_str(&contents).map_err(|e| e.to_string())
-    } else {
-        Ok(Vec::new())
+    let apps = load_applications()?;
+    let mut all: Vec<ShortcutList> = Vec::new();
+    for app in apps {
+        let mut app_lists = load_lists_for_application(&app.id)?;
+        all.append(&mut app_lists);
     }
+    Ok(all)
 }
 
 // Save all lists
 pub fn save_lists(lists: &Vec<ShortcutList>) -> Result<(), String> {
-    let data_dir = get_data_dir()?;
-    let lists_path = data_dir.join("lists.json");
-    let json = serde_json::to_string_pretty(lists).map_err(|e| e.to_string())?;
-    fs::write(lists_path, json).map_err(|e| e.to_string())
+    use std::collections::HashMap;
+
+    let mut by_app: HashMap<String, Vec<ShortcutList>> = HashMap::new();
+    for list in lists {
+        by_app
+            .entry(list.application_id.clone())
+            .or_insert_with(Vec::new)
+            .push(list.clone());
+    }
+    for (app_id, app_lists) in by_app {
+        save_lists_for_application(&app_id, &app_lists)?;
+    }
+    Ok(())
 }
 
 // Load all applications
@@ -159,6 +197,13 @@ pub fn load_applications() -> Result<Vec<Application>, String> {
         }
     }
     Ok(apps)
+}
+
+// Save lists for a specific application
+pub fn save_lists_for_application(app_id: &str, lists: &Vec<ShortcutList>) -> Result<(), String> {
+    let path = lists_file_path(app_id)?;
+    let json = serde_json::to_string_pretty(lists).map_err(|e| e.to_string())?;
+    fs::write(path, json).map_err(|e| e.to_string())
 }
 
 // Save all applications

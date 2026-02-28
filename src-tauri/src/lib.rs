@@ -31,24 +31,30 @@ fn get_all_lists() -> Result<Vec<storage::ShortcutList>, String> {
 // Save a shortcut list
 #[tauri::command]
 fn save_list(list: storage::ShortcutList) -> Result<(), String> {
-    let mut lists = storage::load_lists()?;
+    let app_id = list.application_id.clone();
+    let mut app_lists = storage::load_lists_for_application(&app_id)?;
 
-    // Find and update existing list, or add new one
-    if let Some(index) = lists.iter().position(|l| l.id == list.id) {
-        lists[index] = list;
+    if let Some(index) = app_lists.iter().position(|l| l.id == list.id) {
+        app_lists[index] = list;
     } else {
-        lists.push(list);
+        app_lists.push(list);
     }
 
-    storage::save_lists(&lists)
+    storage::save_lists_for_application(&app_id, &app_lists)
 }
 
 // Delete a shortcut list
 #[tauri::command]
 fn delete_list(list_id: String) -> Result<(), String> {
-    let mut lists = storage::load_lists()?;
-    lists.retain(|l| l.id != list_id);
-    storage::save_lists(&lists)
+    let all_lists = storage::load_lists()?;
+    if let Some(target) = all_lists.into_iter().find(|l| l.id == list_id) {
+        let app_id = target.application_id;
+        let mut app_lists = storage::load_lists_for_application(&app_id)?;
+        app_lists.retain(|l| l.id != list_id);
+        storage::save_lists_for_application(&app_id, &app_lists)
+    } else {
+        Ok(())
+    }
 }
 
 // Get all applications
