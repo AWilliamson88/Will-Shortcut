@@ -9,6 +9,7 @@ pub struct Application {
     pub id: String,
     pub name: String,
     pub process_name: String,
+    pub detection_name: String,
     pub icon: Option<String>,
     pub last_used_list_id: Option<String>,
 }
