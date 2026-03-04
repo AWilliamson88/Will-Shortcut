@@ -156,12 +156,21 @@ export function Popup() {
   });
 
   if (!appForList) {
+    const rawIdentifier = currentActiveApp.trim();
+
+    let displayName = rawIdentifier;
+    if (displayName.toLowerCase().endsWith('.exe')) {
+      displayName = displayName.slice(0, -4);
+    }
+    displayName = displayName.replace(/\s+/g, ' ').trim();
+
     const newApp: Application = {
       id: uuidv4(),
-      name: currentActiveApp,
-      process_name: currentActiveApp,
-      detection_name: currentActiveApp,
+      name: displayName,
+      process_name: rawIdentifier,
+      detection_name: rawIdentifier,
     };
+
     await saveApplication(newApp);
     appForList = newApp;
   }
