@@ -56,6 +56,22 @@ pub struct Settings {
     pub window_position: String,
 }
 
+fn default_settings() -> Settings {
+    Settings {
+        global_hotkey: "CommandOrControl+Shift+Alt+K".to_string(),
+        always_on_top: true,
+        run_on_startup: true,
+        keyboard_shortcuts: KeyboardShortcuts {
+            move_up: "Control+Up".to_string(),
+            move_down: "Control+Down".to_string(),
+            duplicate: "Control+D".to_string(),
+            delete: "Delete".to_string(),
+            add_new: "Control+N".to_string(),
+        },
+        window_position: default_window_position(),
+    }
+}
+
 const APP_APPLICATIONS_JSON: &str = include_str!("applications.json");
 
 fn user_applications_path() -> Result<PathBuf, String> {
@@ -87,6 +103,17 @@ pub fn get_data_dir() -> Result<PathBuf, String> {
         Ok(data_dir)
     } else {
         Err("Could not determine data directory".to_string())
+    }
+}
+
+// Get the app config directory (for settings, small prefs)
+pub fn get_config_dir() -> Result<PathBuf, String> {
+    if let Some(proj_dirs) = ProjectDirs::from("com", "AWilliamson88", "WillShortcut") {
+        let config_dir = proj_dirs.config_dir().to_path_buf();
+        fs::create_dir_all(&config_dir).map_err(|e| e.to_string())?;
+        Ok(config_dir)
+    } else {
+        Err("Could not determine config directory".to_string())
     }
 }
 
@@ -122,28 +149,29 @@ pub fn load_lists_for_application(app_id: &str) -> Result<Vec<ShortcutList>, Str
 
 // Load settings from file
 pub fn load_settings() -> Result<Settings, String> {
-    let data_dir = get_data_dir()?;
-    let settings_path = data_dir.join("settings.json");
+    // New preferred location
+    let config_dir = get_config_dir()?;
+    let settings_path = config_dir.join("settings.json");
 
     if settings_path.exists() {
-        let contents = fs::read_to_string(settings_path).map_err(|e| e.to_string())?;
-        serde_json::from_str(&contents).map_err(|e| e.to_string())
-    } else {
-        // Return default settings
-        Ok(Settings {
-            global_hotkey: "CommandOrControl+Shift+Alt+K".to_string(),
-            always_on_top: true,
-            run_on_startup: true,
-            keyboard_shortcuts: KeyboardShortcuts {
-                move_up: "Control+Up".to_string(),
-                move_down: "Control+Down".to_string(),
-                duplicate: "Control+D".to_string(),
-                delete: "Delete".to_string(),
-                add_new: "Control+N".to_string(),
-            },
-            window_position: default_window_position(),
-        })
+        let contents = fs::read_to_string(&settings_path).map_err(|e| e.to_string())?;
+        let settings: Settings = serde_json::from_str(&contents).map_err(|e| e.to_string())?;
+        return Ok(settings);
     }
+
+    // Fallback: old location in data_dir (one-time compatibility)
+    let data_dir = get_data_dir()?;
+    let old_settings_path = data_dir.join("settings.json");
+    if old_settings_path.exists() {
+        let contents = fs::read_to_string(&old_settings_path).map_err(|e| e.to_string())?;
+        let settings: Settings = serde_json::from_str(&contents).map_err(|e| e.to_string())?;
+        // Optionally re-save into config_dir so future loads use the new path
+        let _ = save_settings(&settings);
+        return Ok(settings);
+    }
+
+    // Nothing on disk → use defaults
+    Ok(default_settings())
 }
 
 // Save settings to file
