@@ -149,7 +149,6 @@ pub fn load_lists_for_application(app_id: &str) -> Result<Vec<ShortcutList>, Str
 
 // Load settings from file
 pub fn load_settings() -> Result<Settings, String> {
-    // New preferred location
     let config_dir = get_config_dir()?;
     let settings_path = config_dir.join("settings.json");
 
@@ -159,25 +158,14 @@ pub fn load_settings() -> Result<Settings, String> {
         return Ok(settings);
     }
 
-    // Fallback: old location in data_dir (one-time compatibility)
-    let data_dir = get_data_dir()?;
-    let old_settings_path = data_dir.join("settings.json");
-    if old_settings_path.exists() {
-        let contents = fs::read_to_string(&old_settings_path).map_err(|e| e.to_string())?;
-        let settings: Settings = serde_json::from_str(&contents).map_err(|e| e.to_string())?;
-        // Optionally re-save into config_dir so future loads use the new path
-        let _ = save_settings(&settings);
-        return Ok(settings);
-    }
-
     // Nothing on disk → use defaults
     Ok(default_settings())
 }
 
 // Save settings to file
 pub fn save_settings(settings: &Settings) -> Result<(), String> {
-    let data_dir = get_data_dir()?;
-    let settings_path = data_dir.join("settings.json");
+    let config_dir = get_config_dir()?;
+    let settings_path = config_dir.join("settings.json");
     let json = serde_json::to_string_pretty(settings).map_err(|e| e.to_string())?;
     fs::write(settings_path, json).map_err(|e| e.to_string())
 }
