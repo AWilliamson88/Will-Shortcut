@@ -29,8 +29,8 @@
       {
         "label": "settings",
         "title": "Settings - will-shortcut",
-        "width": 520,
-        "height": 520,
+        "width": 625,
+        "height": 625,
         "resizable": false,
         "fullscreen": false,
         "decorations": false,
