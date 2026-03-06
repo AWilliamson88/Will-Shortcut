@@ -231,6 +231,13 @@ export function Popup() {
 
   const currentActiveApp = detectedActiveApp || activeApp;
 
+  const activeAppRecord = currentActiveApp
+    ? applications.find((app) => {
+      const matchKey = app.detection_name || app.process_name;
+      return matchKey === currentActiveApp;
+    })
+    : undefined;
+
   const hasListForCurrentApp = shortcutLists.some((list) => {
     const app = applications.find((a) => a.id === list.application_id);
     if (!app) return false;
@@ -372,7 +379,7 @@ export function Popup() {
 
       {/* Footer */}
       <div className="p-3 border-t border-gray-700 text-base text-center">
-        Active: {detectedActiveApp || activeApp || 'Unknown'}
+        Active: {activeAppRecord?.name || currentActiveApp || 'Unknown'}
       </div>
 
       {/* Modal */}
