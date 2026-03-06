@@ -24,7 +24,7 @@ export function Popup() {
       setDetectedActiveApp(event.payload);
       // Update selectedList when the active app changes
       if (activeApp !== event.payload) {
-        autoSelectList();
+        autoSelectList(event.payload);
       }
     });
 
@@ -33,7 +33,7 @@ export function Popup() {
     };
   }, []);
 
-  // Auto-select the first list when data loads
+  // select a list when data loads
   useEffect(() => {
     console.log("Auto-selecting list...");
     autoSelectList();
@@ -66,10 +66,9 @@ export function Popup() {
   }, []);
 
   // Auto-select the first list when data loads
-  const autoSelectList = () => {
-    // if (shortcutLists.length > 0 && !selectedList) {
+  const autoSelectList = (identifier?: string) => {
     // Try to find a list for the active app (use detected app if available)
-    const currentActiveApp = detectedActiveApp || activeApp;
+    const currentActiveApp = identifier ?? (detectedActiveApp || activeApp);
     console.log("Current active app:", currentActiveApp);
     console.log("lists:", shortcutLists);
     const activeAppLists = shortcutLists.filter(list => {
@@ -87,7 +86,6 @@ export function Popup() {
       setSelectedList(null);
       console.log("No list found for active app, null: ");
     }
-    // }
     console.log("Active app:", detectedActiveApp || activeApp);
     console.log("  ");
   };
