@@ -145,47 +145,47 @@ export function Popup() {
   };
 
   const handleCreateList = async (name: string) => {
-  const currentActiveApp = detectedActiveApp || activeApp;
-  if (!currentActiveApp) return;
+    const currentActiveApp = detectedActiveApp || activeApp;
+    if (!currentActiveApp) return;
 
-  let appForList = applications.find(app => {
-    const matchKey = app.detection_name || app.process_name;
-    return matchKey === currentActiveApp;
-  });
+    let appForList = applications.find(app => {
+      const matchKey = app.detection_name || app.process_name;
+      return matchKey === currentActiveApp;
+    });
 
-  if (!appForList) {
-    const rawIdentifier = currentActiveApp.trim();
+    if (!appForList) {
+      const rawIdentifier = currentActiveApp.trim();
 
-    let displayName = rawIdentifier;
-    if (displayName.toLowerCase().endsWith('.exe')) {
-      displayName = displayName.slice(0, -4);
+      let displayName = rawIdentifier;
+      if (displayName.toLowerCase().endsWith('.exe')) {
+        displayName = displayName.slice(0, -4);
+      }
+      displayName = displayName.replace(/\s+/g, ' ').trim();
+
+      const newApp: Application = {
+        id: uuidv4(),
+        name: displayName,
+        process_name: rawIdentifier,
+        detection_name: rawIdentifier,
+      };
+
+      await saveApplication(newApp);
+      appForList = newApp;
     }
-    displayName = displayName.replace(/\s+/g, ' ').trim();
 
-    const newApp: Application = {
+    const now = new Date().toISOString();
+    const newList: ShortcutList = {
       id: uuidv4(),
-      name: displayName,
-      process_name: rawIdentifier,
-      detection_name: rawIdentifier,
+      name: name.trim(),
+      application_id: appForList.id,
+      shortcuts: [],
+      created_at: now,
+      updated_at: now,
     };
 
-    await saveApplication(newApp);
-    appForList = newApp;
-  }
-
-  const now = new Date().toISOString();
-  const newList: ShortcutList = {
-    id: uuidv4(),
-    name: name.trim(),
-    application_id: appForList.id,
-    shortcuts: [],
-    created_at: now,
-    updated_at: now,
+    await saveList(newList);
+    setSelectedList(newList);
   };
-
-  await saveList(newList);
-  setSelectedList(newList);
-};
 
   const handleDeleteCurrentList = async () => {
     if (!selectedList) return;
