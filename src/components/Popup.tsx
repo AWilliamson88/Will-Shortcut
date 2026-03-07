@@ -12,7 +12,7 @@ import { PhysicalPosition } from "@tauri-apps/api/dpi";
 
 export function Popup() {
   const { shortcutLists, applications, activeApp, loading, error, saveList, deleteList, dumpApps, saveApplication } = useShortcuts();
-  const [selectedList, setSelectedList] = useState<ShortcutList | null>(null);
+  const [selectedListId, setSelectedListId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingShortcut, setEditingShortcut] = useState<Shortcut | undefined>(undefined);
   const [detectedActiveApp, setDetectedActiveApp] = useState<string>('');
@@ -34,20 +34,7 @@ export function Popup() {
   useEffect(() => {
     console.log("Auto-selecting list...");
     autoSelectList();
-  }, [shortcutLists, applications, activeApp, detectedActiveApp, selectedList]);
-
-  // Update selectedList when lists change
-  useEffect(() => {
-    console.log("Updating selected list...");
-    if (selectedList) {
-      console.log("Selected list:", selectedList);
-      const updatedList = shortcutLists.find(l => l.id === selectedList.id);
-      if (updatedList) {
-        console.log("Found updated list:", updatedList);
-        setSelectedList(updatedList);
-      }
-    }
-  }, [shortcutLists]);
+  }, [shortcutLists, applications, activeApp, detectedActiveApp]);
 
   // Close modals when popup is hidden
   useEffect(() => {
@@ -77,10 +64,15 @@ export function Popup() {
 
     console.log("Active app lists:", activeAppLists);
     if (activeAppLists.length > 0) {
-      setSelectedList(activeAppLists[0]);
+      // Don't select a list for another app.
+      const lastUsed = activeApp?.last_used_list_id;
+      const lastUsedList = lastUsed
+        ? activeAppLists.find(l => l.id === lastUsed)
+        : undefined;
+      setSelectedListId(lastUsedList?.id ?? activeAppLists[0].id);
       console.log("Found list for active app:", activeAppLists[0].name);
     } else {
-      setSelectedList(null);
+      setSelectedListId(null);
       console.log("No list found for active app, null: ");
     }
     console.log("Active app:", detectedActiveApp || activeApp?.detection_name);
@@ -112,6 +104,9 @@ export function Popup() {
   };
 
   const handleSaveShortcut = async (shortcut: Shortcut) => {
+    if (!selectedListId) return;
+
+    const selectedList = shortcutLists.find(l => l.id === selectedListId);
     if (!selectedList) return;
 
     const updatedShortcuts = editingShortcut
@@ -128,10 +123,12 @@ export function Popup() {
   };
 
   const handleDeleteShortcut = async (shortcutId: string) => {
+    if (!selectedListId) return;
+
+    const selectedList = shortcutLists.find(l => l.id === selectedListId);
     if (!selectedList) return;
 
     const updatedShortcuts = selectedList.shortcuts.filter(s => s.id !== shortcutId);
-
     const updatedList: ShortcutList = {
       ...selectedList,
       shortcuts: updatedShortcuts,
@@ -181,16 +178,24 @@ export function Popup() {
     };
 
     await saveList(newList);
-    setSelectedList(newList);
+    setSelectedListId(newList.id);
   };
 
   const handleDeleteCurrentList = async () => {
-    if (!selectedList) return;
-    await deleteList(selectedList.id);
-    setSelectedList(null);
+    if (!selectedListId) return;
+    await deleteList(selectedListId);
+    setSelectedListId(null);
+    // Update the active app's last used list id
+    if (activeApp) {
+      await saveApplication({ ...activeApp, last_used_list_id: undefined });
+    }
+    // Auto select a new list
+    autoSelectList();
   };
 
   const handleRenameList = async (name: string) => {
+    if (!selectedListId) return;
+    const selectedList = shortcutLists.find(l => l.id === selectedListId);
     if (!selectedList) return;
 
     const trimmed = name.trim();
@@ -258,7 +263,11 @@ const activeIdentifier =
     return `${activeIdentifier} shortcuts`;
   })();
 
-  const nextOrder = selectedList ? selectedList.shortcuts.length : 0;
+  const nextOrder = selectedListId ? shortcutLists.find(l => l.id === selectedListId)?.shortcuts.length || 0 : 0;
+
+  const selectedList = selectedListId
+  ? shortcutLists.find(l => l.id === selectedListId) || null
+  : null;
 
   return (
     <div className="h-screen w-full bg-gray-900 text-white flex flex-col">
@@ -275,10 +284,9 @@ const activeIdentifier =
         <select
           className="flex-1 bg-gray-800 text-white px-2 py-1 rounded border border-gray-700
           focus:outline-none focus:border-blue-500 w-10"
-          value={selectedList?.id || ''}
+          value={selectedListId || ''}
           onChange={(e) => {
-            const list = shortcutLists.find(l => l.id === e.target.value);
-            setSelectedList(list || null);
+            setSelectedListId(e.target.value)
           }}
         >
           {(shortcutLists.length === 0 || !hasListForCurrentApp) && <option value="">No lists available</option>}
@@ -298,7 +306,7 @@ const activeIdentifier =
             setIsListModalOpen(true);
           }}
           className="p-2 bg-gray-800 border border-gray-700 rounded hover:bg-gray-700"
-          title={selectedList ? 'Edit list' : 'Create list'}
+          title={selectedListId ? 'Edit list' : 'Create list'}
         >
           <Edit2 className="w-4 h-4 text-gray-300" />
         </button>
@@ -314,7 +322,7 @@ const activeIdentifier =
 
       {/* Shortcuts List */}
       <div className="flex-1 overflow-y-auto py-1">
-        {selectedList && selectedList.shortcuts.length > 0 ? (
+        {selectedList ? selectedList.shortcuts.length > 0 ? (
           <div className="">
             {selectedList.shortcuts
               .sort((a, b) => a.order - b.order)
@@ -336,9 +344,10 @@ const activeIdentifier =
                     </kbd>
                   </div>
                 </div>
-              ))}
+              ))
+            }
           </div>
-        ) : selectedList ? (
+        ) : (
           <div className="text-center text-gray-500 mt-8">
             <Keyboard className="w-12 h-12 mx-auto mb-4 opacity-50" />
             <p>No shortcuts in this list</p>
@@ -395,7 +404,7 @@ const activeIdentifier =
 
       <ListManageModal
         isOpen={isListModalOpen}
-        selectedList={selectedList}
+        selectedList={selectedListId ? shortcutLists.find(l => l.id === selectedListId) || null : null}
         onClose={() => setIsListModalOpen(false)}
         onCreate={handleCreateList}
         onRename={handleRenameList}
