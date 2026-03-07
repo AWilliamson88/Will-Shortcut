@@ -293,15 +293,18 @@ const activeIdentifier =
             setSelectedListId(e.target.value)
           }}
         >
-          {(shortcutLists.length === 0 || !hasListForCurrentApp) && <option value="">No lists available</option>}
-          {shortcutLists.map(list => {
-            const app = applications.find(a => a.id === list.application_id);
-            return (
-              <option key={list.id} value={list.id}>
-                {app?.name || 'Unknown'} - {list.name}
-              </option>
-            );
-          })}
+	      {shortcutLists.length === 0 || !hasListForCurrentApp ? (
+	        <option value="">No lists available</option>
+	      ) : (
+	        shortcutLists.map((list: ShortcutList) => {
+	          const app = applications.find((a) => a.id === list.application_id);
+	          return (
+	            <option key={list.id} value={list.id}>
+	              {app?.name || 'Unknown'} - {list.name}
+	            </option>
+	          );
+	        })
+	      )}
         </select>
         <button
           type="button"
