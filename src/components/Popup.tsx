@@ -22,10 +22,7 @@ export function Popup() {
   useEffect(() => {
     const unlisten = listen<string>('active-app-detected', (event) => {
       setDetectedActiveApp(event.payload);
-      // Update selectedList when the active app changes
-      if (activeApp !== event.payload) {
-        autoSelectList(event.payload);
-      }
+      autoSelectList(event.payload);
     });
 
     return () => {
@@ -68,7 +65,7 @@ export function Popup() {
   // Auto-select the first list when data loads
   const autoSelectList = (identifier?: string) => {
     // Try to find a list for the active app (use detected app if available)
-    const currentActiveApp = identifier ?? (detectedActiveApp || activeApp);
+    const currentActiveApp = identifier ?? (detectedActiveApp || activeApp?.detection_name);
     console.log("Current active app:", currentActiveApp);
     console.log("lists:", shortcutLists);
     const activeAppLists = shortcutLists.filter(list => {
@@ -86,7 +83,7 @@ export function Popup() {
       setSelectedList(null);
       console.log("No list found for active app, null: ");
     }
-    console.log("Active app:", detectedActiveApp || activeApp);
+    console.log("Active app:", detectedActiveApp || activeApp?.detection_name);
     console.log("  ");
   };
 
@@ -145,7 +142,7 @@ export function Popup() {
   };
 
   const handleCreateList = async (name: string) => {
-    const currentActiveApp = detectedActiveApp || activeApp;
+    const currentActiveApp = detectedActiveApp || activeApp?.process_name;
     if (!currentActiveApp) return;
 
     let appForList = applications.find(app => {
@@ -229,12 +226,16 @@ export function Popup() {
     );
   }
 
-  const currentActiveApp = detectedActiveApp || activeApp;
+const activeIdentifier =
+  detectedActiveApp ||
+  activeApp?.detection_name ||
+  activeApp?.process_name ||
+  '';
 
-  const activeAppRecord = currentActiveApp
+  const activeAppRecord = activeIdentifier
     ? applications.find((app) => {
       const matchKey = app.detection_name || app.process_name;
-      return matchKey === currentActiveApp;
+      return matchKey === activeIdentifier;
     })
     : undefined;
 
@@ -242,19 +243,19 @@ export function Popup() {
     const app = applications.find((a) => a.id === list.application_id);
     if (!app) return false;
     const matchKey = app.detection_name || app.process_name;
-    return matchKey === currentActiveApp;
+    return matchKey === activeIdentifier;
   });
 
   const defaultNewListName = (() => {
-    if (!currentActiveApp) return 'New list';
+    if (!activeIdentifier) return 'New list';
     const appForList = applications.find((app) => {
       const matchKey = app.detection_name || app.process_name;
-      return matchKey === currentActiveApp;
+      return matchKey === activeIdentifier;
     });
     if (appForList?.name) {
       return `${appForList.name} shortcuts`;
     }
-    return `${currentActiveApp} shortcuts`;
+    return `${activeIdentifier} shortcuts`;
   })();
 
   const nextOrder = selectedList ? selectedList.shortcuts.length : 0;
@@ -379,7 +380,7 @@ export function Popup() {
 
       {/* Footer */}
       <div className="p-3 border-t border-gray-700 text-base text-center">
-        Active: {activeAppRecord?.name || currentActiveApp || 'Unknown'}
+        Active: {activeAppRecord?.name || activeIdentifier || 'Unknown'}
       </div>
 
       {/* Modal */}
