@@ -42,6 +42,10 @@ export function Popup() {
       setIsModalOpen(false);
       setEditingShortcut(undefined);
       setIsListModalOpen(false);
+      // Update the active app's last used list id
+      if (activeApp && selectedListId !== null && selectedListId !== activeApp.last_used_list_id) {
+        saveApplication({ ...activeApp, last_used_list_id: selectedListId });
+      }
     });
 
     return () => {
