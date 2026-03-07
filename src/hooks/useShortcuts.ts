@@ -7,7 +7,7 @@ export function useShortcuts() {
   const [shortcutLists, setShortcutLists] = useState<ShortcutList[]>([]);
   const [applications, setApplications] = useState<Application[]>([]);
   const [settings, setSettings] = useState<Settings | null>(null);
-  const [activeApp, setActiveApp] = useState<string>('');
+  const [activeApp, setActiveApp] = useState<Application | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -47,7 +47,7 @@ export function useShortcuts() {
           console.error('Failed to sync autostart on load:', e);
         }
       }
-      setActiveApp(activeAppData);
+      setActiveApp(appsData.find(app => app.detection_name === activeAppData) || null);
       setError(null);
     } catch (err) {
       setError(err as string);
@@ -114,8 +114,8 @@ export function useShortcuts() {
 
   const refreshActiveApp = async () => {
     try {
-      const app = await invoke<string>('get_active_application');
-      setActiveApp(app);
+      const activeApp = await invoke<string>('get_active_application');
+      setActiveApp(applications.find(app => app.detection_name === activeApp) || null);
     } catch (err) {
       console.error('Failed to get active app:', err);
     }
