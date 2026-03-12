@@ -264,7 +264,6 @@ fn register_global_hotkey(app: &tauri::AppHandle, hotkey: &str) -> Result<(), St
 
     app.global_shortcut()
         .on_shortcut(hotkey, move |_app, _shortcut, event| {
-            // ⬅ paste your existing toggle logic here
             // Only trigger on key press, not release
             if event.state == tauri_plugin_global_shortcut::ShortcutState::Pressed {
                 if let Some(window) = handle.get_webview_window("main") {
