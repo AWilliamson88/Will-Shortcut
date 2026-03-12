@@ -1,34 +1,57 @@
+import type React from 'react';
 import { useState, useEffect } from 'react';
 import { listen } from '@tauri-apps/api/event';
 import { useShortcuts } from '../hooks/useShortcuts';
 import { ShortcutList, Shortcut, Application } from '../types';
 import { Keyboard, Settings as SettingsIcon, Plus, Edit2 } from 'lucide-react';
 import { ShortcutModal } from './ShortcutModal';
+import { ShortcutRow } from './ShortcutRow';
+import { ShortcutContextMenu } from './ShortcutContextMenu';
 import { v4 as uuidv4 } from 'uuid';
 import { ListManageModal } from './ListManageModal';
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { currentMonitor } from "@tauri-apps/api/window";
 import { PhysicalPosition } from "@tauri-apps/api/dpi";
+import {
+  sortShortcuts,
+  deleteShortcut as deleteShortcutFromList,
+  updateShortcut as updateShortcutInList,
+  insertShortcutAt,
+  moveShortcut,
+} from '../utils/shortcutListUtils';
+
+type ContextMenuState =
+  | { isOpen: false }
+  | {
+      isOpen: true;
+      shortcutId: string;
+      index: number;
+      x: number;
+      y: number;
+    };
 
 export function Popup() {
   const { shortcutLists, applications, activeApp, loading, error, saveList, deleteList, dumpApps, saveApplication } = useShortcuts();
-  const [selectedListId, setSelectedListId] = useState<string | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingShortcut, setEditingShortcut] = useState<Shortcut | undefined>(undefined);
-  const [detectedActiveApp, setDetectedActiveApp] = useState<string>('');
-  const [isListModalOpen, setIsListModalOpen] = useState(false);
+	  const [selectedListId, setSelectedListId] = useState<string | null>(null);
+	  const [isModalOpen, setIsModalOpen] = useState(false);
+	  const [editingShortcut, setEditingShortcut] = useState<Shortcut | undefined>(undefined);
+	  const [detectedActiveApp, setDetectedActiveApp] = useState<string>('');
+	  const [isListModalOpen, setIsListModalOpen] = useState(false);
+	  const [insertIndex, setInsertIndex] = useState<number | null>(null);
+	  const [contextMenu, setContextMenu] = useState<ContextMenuState>({ isOpen: false });
 
-  // Listen for active app detection event
-  useEffect(() => {
-    const unlisten = listen<string>('active-app-detected', (event) => {
-      setDetectedActiveApp(event.payload);
-      autoSelectList(event.payload);
-    });
+	  // Listen for active app detection event
+	  useEffect(() => {
+	    const unlisten = listen<string>('active-app-detected', (event) => {
+	      // Only update the detected app name; actual list selection is handled
+	      // by the autoSelectList effect that reacts to detectedActiveApp changes.
+	      setDetectedActiveApp(event.payload);
+	    });
 
-    return () => {
-      unlisten.then(fn => fn());
-    };
-  }, []);
+	    return () => {
+	      unlisten.then((fn) => fn());
+	    };
+	  }, []);
 
   // select a list when data loads
   useEffect(() => {
@@ -36,52 +59,93 @@ export function Popup() {
     autoSelectList();
   }, [shortcutLists, applications, activeApp, detectedActiveApp]);
 
-  // Close modals when popup is hidden
-  useEffect(() => {
-    const unlistenPromise = listen('popup-hidden', () => {
-      setIsModalOpen(false);
-      setEditingShortcut(undefined);
-      setIsListModalOpen(false);
-      // Update the active app's last used list id
-      if (activeApp && selectedListId !== null && selectedListId !== activeApp.last_used_list_id) {
-        saveApplication({ ...activeApp, last_used_list_id: selectedListId });
-      }
-    });
-
-    return () => {
-      unlistenPromise.then(unlisten => unlisten());
-    };
-  }, []);
-
-  // Auto-select the first list when data loads
-  const autoSelectList = (identifier?: string) => {
-    // Try to find a list for the active app (use detected app if available)
-    const currentActiveApp = identifier ?? (detectedActiveApp || activeApp?.detection_name);
-    console.log("Current active app:", currentActiveApp);
-    console.log("lists:", shortcutLists);
-    const activeAppLists = shortcutLists.filter(list => {
-      const app = applications.find(a => a.id === list.application_id);
-      if (!app) return false;
-      const matchKey = app.detection_name || app.process_name;
-      return matchKey === currentActiveApp;
-    });
-
-    console.log("Active app lists:", activeAppLists);
-    if (activeAppLists.length > 0) {
-      // Don't select a list for another app.
-      const lastUsed = activeApp?.last_used_list_id;
-      const lastUsedList = lastUsed
-        ? activeAppLists.find(l => l.id === lastUsed)
-        : undefined;
-      setSelectedListId(lastUsedList?.id ?? activeAppLists[0].id);
-      console.log("Found list for active app:", activeAppLists[0].name);
-    } else {
-      setSelectedListId(null);
-      console.log("No list found for active app, null: ");
-    }
-    console.log("Active app:", detectedActiveApp || activeApp?.detection_name);
-    console.log("  ");
-  };
+		  // Close modals when popup is hidden and persist the *current* app's last used list
+		  useEffect(() => {
+		    const unlistenPromise = listen('popup-hidden', () => {
+		      setIsModalOpen(false);
+		      setEditingShortcut(undefined);
+		      setIsListModalOpen(false);
+		      setInsertIndex(null);
+		      setContextMenu({ isOpen: false });
+		      
+		      if (!selectedListId) {
+		        return;
+		      }
+		      
+		      // Work out which app this popup session was showing shortcuts for,
+		      // based on the detected active app or the current activeApp fallback.
+		      const currentIdentifier =
+		        detectedActiveApp ||
+		        activeApp?.detection_name ||
+		        activeApp?.process_name;
+		      
+		      if (!currentIdentifier) {
+		        return;
+		      }
+		      
+		      const appForIdentifier = applications.find((app) => {
+		        const matchKey = app.detection_name || app.process_name;
+		        return matchKey === currentIdentifier;
+		      });
+		      
+		      if (!appForIdentifier) {
+		        return;
+		      }
+		      
+		      if (appForIdentifier.last_used_list_id !== selectedListId) {
+		        saveApplication({ ...appForIdentifier, last_used_list_id: selectedListId });
+		      }
+		    });
+	
+		    return () => {
+		      unlistenPromise.then((unlisten) => unlisten());
+		    };
+		  }, [applications, activeApp, detectedActiveApp, selectedListId, saveApplication]);
+	
+		  // Auto-select the appropriate list for the current app when data or
+		  // the detected app changes
+		  const autoSelectList = (identifier?: string) => {
+		    const currentIdentifier =
+		      identifier ||
+		      detectedActiveApp ||
+		      activeApp?.detection_name ||
+		      activeApp?.process_name;
+		
+		    console.log('Current active identifier:', currentIdentifier);
+		    console.log('Lists:', shortcutLists);
+		
+		    if (!currentIdentifier) {
+		      setSelectedListId(null);
+		      return;
+		    }
+		
+		    const appForIdentifier = applications.find((app) => {
+		      const matchKey = app.detection_name || app.process_name;
+		      return matchKey === currentIdentifier;
+		    });
+		
+		    console.log('Resolved app for identifier:', appForIdentifier);
+		
+		    const activeAppLists = appForIdentifier
+		      ? shortcutLists.filter((list) => list.application_id === appForIdentifier.id)
+		      : [];
+		
+		    console.log('Active app lists:', activeAppLists);
+		
+		    if (activeAppLists.length > 0) {
+		      const lastUsed = appForIdentifier?.last_used_list_id;
+		      const lastUsedList = lastUsed
+		        ? activeAppLists.find((l) => l.id === lastUsed)
+		        : undefined;
+		
+		      const nextSelectedId = lastUsedList?.id ?? activeAppLists[0].id;
+		      setSelectedListId(nextSelectedId);
+		      console.log('Selected list:', nextSelectedId);
+		    } else {
+		      setSelectedListId(null);
+		      console.log('No list found for active app, null.');
+		    }
+		  };
 
   const openSettingsWindow = async () => {
     const w = await WebviewWindow.getByLabel("settings");
@@ -97,52 +161,136 @@ export function Popup() {
     await w.setFocus();
   };
 
-  const handleAddShortcut = () => {
-    setEditingShortcut(undefined);
-    setIsModalOpen(true);
-  };
+	  const getSelectedList = (): ShortcutList | null => {
+	    if (!selectedListId) return null;
+	    return shortcutLists.find((l) => l.id === selectedListId) || null;
+	  };
 
-  const handleEditShortcut = (shortcut: Shortcut) => {
-    setEditingShortcut(shortcut);
-    setIsModalOpen(true);
-  };
+	  const updateSelectedListShortcuts = async (
+	    transform: (shortcuts: Shortcut[]) => Shortcut[],
+	  ) => {
+	    const selectedList = getSelectedList();
+	    if (!selectedList) return;
 
-  const handleSaveShortcut = async (shortcut: Shortcut) => {
-    if (!selectedListId) return;
+	    const updatedShortcuts = transform(selectedList.shortcuts);
+	    const updatedList: ShortcutList = {
+	      ...selectedList,
+	      shortcuts: updatedShortcuts,
+	      updated_at: new Date().toISOString(),
+	    };
 
-    const selectedList = shortcutLists.find(l => l.id === selectedListId);
-    if (!selectedList) return;
+	    await saveList(updatedList);
+	  };
 
-    const updatedShortcuts = editingShortcut
-      ? selectedList.shortcuts.map(s => s.id === shortcut.id ? shortcut : s)
-      : [...selectedList.shortcuts, shortcut];
+	  const handleAddShortcut = () => {
+	    setEditingShortcut(undefined);
+	    setInsertIndex(null);
+	    setIsModalOpen(true);
+	  };
 
-    const updatedList: ShortcutList = {
-      ...selectedList,
-      shortcuts: updatedShortcuts,
-      updated_at: new Date().toISOString(),
-    };
+	  const handleShortcutContextMenu = (
+	    event: React.MouseEvent<HTMLDivElement>,
+	    shortcut: Shortcut,
+	    index: number,
+	  ) => {
+	    event.preventDefault();
+	    setContextMenu({
+	      isOpen: true,
+	      shortcutId: shortcut.id,
+	      index,
+	      x: event.clientX,
+	      y: event.clientY,
+	    });
+	  };
 
-    await saveList(updatedList);
-  };
+	  const handleEditShortcut = (shortcut: Shortcut) => {
+	    setEditingShortcut(shortcut);
+	    setInsertIndex(null);
+	    setIsModalOpen(true);
+	  };
 
-  const handleDeleteShortcut = async (shortcutId: string) => {
-    if (!selectedListId) return;
+	  const handleSaveShortcut = async (shortcut: Shortcut) => {
+	    await updateSelectedListShortcuts((shortcuts) => {
+	      if (editingShortcut) {
+	        return updateShortcutInList(shortcuts, shortcut);
+	      }
 
-    const selectedList = shortcutLists.find(l => l.id === selectedListId);
-    if (!selectedList) return;
+	      const index = insertIndex !== null ? insertIndex : shortcuts.length;
+	      const newShortcut: Shortcut = {
+	        ...shortcut,
+	        order: index,
+	      };
 
-    const updatedShortcuts = selectedList.shortcuts.filter(s => s.id !== shortcutId);
-    const updatedList: ShortcutList = {
-      ...selectedList,
-      shortcuts: updatedShortcuts,
-      updated_at: new Date().toISOString(),
-    };
+	      return insertShortcutAt(shortcuts, newShortcut, index);
+	    });
 
-    await saveList(updatedList);
-  };
+	    setEditingShortcut(undefined);
+	    setInsertIndex(null);
+	  };
 
-  const handleCreateList = async (name: string) => {
+	  const handleDeleteShortcut = async (shortcutId: string) => {
+	    await updateSelectedListShortcuts((shortcuts) =>
+	      deleteShortcutFromList(shortcuts, shortcutId),
+	    );
+	  };
+
+	  const handleAddShortcutAbove = () => {
+	    if (!contextMenu.isOpen) return;
+	    setEditingShortcut(undefined);
+	    setInsertIndex(contextMenu.index);
+	    setIsModalOpen(true);
+	  };
+
+	  const handleAddShortcutBelow = () => {
+	    if (!contextMenu.isOpen) return;
+	    setEditingShortcut(undefined);
+	    setInsertIndex(contextMenu.index + 1);
+	    setIsModalOpen(true);
+	  };
+
+	  const handleRenameShortcutFromMenu = () => {
+	    if (!contextMenu.isOpen) return;
+	    const selectedList = getSelectedList();
+	    if (!selectedList) return;
+	    const shortcut = selectedList.shortcuts.find(
+	      (s) => s.id === contextMenu.shortcutId,
+	    );
+	    if (!shortcut) return;
+	    handleEditShortcut(shortcut);
+	  };
+
+		  const handleMoveShortcut = async (direction: 'up' | 'down') => {
+		    if (!contextMenu.isOpen) return;
+		    const selectedList = getSelectedList();
+		    if (!selectedList) return;
+		
+		    const sorted = sortShortcuts(selectedList.shortcuts);
+		    const fromIndex = sorted.findIndex(
+		      (s) => s.id === contextMenu.shortcutId,
+		    );
+		    if (fromIndex === -1) return;
+		
+		    const toIndex = direction === 'up' ? fromIndex - 1 : fromIndex + 1;
+		
+		    if (toIndex < 0 || toIndex >= sorted.length) {
+		      return;
+		    }
+		
+		    await updateSelectedListShortcuts((shortcuts) =>
+		      moveShortcut(shortcuts, fromIndex, toIndex),
+		    );
+		  };
+
+	  const handleDeleteShortcutFromMenu = async () => {
+	    if (!contextMenu.isOpen) return;
+	    await handleDeleteShortcut(contextMenu.shortcutId);
+	  };
+
+	  const closeContextMenu = () => {
+	    setContextMenu({ isOpen: false });
+	  };
+
+	  const handleCreateList = async (name: string) => {
     const currentActiveApp = detectedActiveApp || activeApp?.process_name;
     if (!currentActiveApp) return;
 
@@ -255,7 +403,7 @@ const activeIdentifier =
     return matchKey === activeIdentifier;
   });
 
-  const defaultNewListName = (() => {
+	  const defaultNewListName = (() => {
     if (!activeIdentifier) return 'New list';
     const appForList = applications.find((app) => {
       const matchKey = app.detection_name || app.process_name;
@@ -264,16 +412,30 @@ const activeIdentifier =
     if (appForList?.name) {
       return `${appForList.name} shortcuts`;
     }
-    return `${activeIdentifier} shortcuts`;
-  })();
+	    return `${activeIdentifier} shortcuts`;
+	  })();
 
-  const nextOrder = selectedListId ? shortcutLists.find(l => l.id === selectedListId)?.shortcuts.length || 0 : 0;
+	  const selectedList = selectedListId
+	    ? shortcutLists.find((l) => l.id === selectedListId) || null
+	    : null;
 
-  const selectedList = selectedListId
-  ? shortcutLists.find(l => l.id === selectedListId) || null
-  : null;
+		  const sortedShortcuts = selectedList ? sortShortcuts(selectedList.shortcuts) : [];
+		
+		  const nextOrder = selectedList ? selectedList.shortcuts.length : 0;
+		
+		  const contextMenuIndex =
+		    contextMenu.isOpen
+		      ? sortedShortcuts.findIndex(
+		          (s) => s.id === contextMenu.shortcutId,
+		        )
+		      : -1;
+		
+		  const canMoveUp = contextMenuIndex > 0;
+		  const canMoveDown =
+		    contextMenuIndex !== -1 &&
+		    contextMenuIndex < sortedShortcuts.length - 1;
 
-  return (
+	  return (
     <div className="h-screen w-full bg-gray-900 text-white flex flex-col">
       {/* Header */}
       <div className="px-2 border-b border-gray-700 flex items-center justify-between">
@@ -329,32 +491,19 @@ const activeIdentifier =
 
       {/* Shortcuts List */}
       <div className="flex-1 overflow-y-auto py-1">
-        {selectedList ? selectedList.shortcuts.length > 0 ? (
-          <div className="">
-            {selectedList.shortcuts
-              .sort((a, b) => a.order - b.order)
-              .map((shortcut, index) => (
-                <div
-                  key={shortcut.id}
-                  onClick={() => handleEditShortcut(shortcut)}
-                  className={`bg-gray-${index % 2 === 0 ? '7' : '8'}00 px-1 hover:bg-gray-600 transition-colors cursor-pointer`}
-                >
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="text-sm text-gray-300">{shortcut.description}</span>
-                    <kbd className="px-2 py-1 rounded text-base font-mono text-right">
-                      {shortcut.key_combo.split(',').map((part, idx, arr) => (
-                        <span key={idx} className="whitespace-nowrap">
-                          {part.trim()}
-                          {idx < arr.length - 1 ? ', ' : ''}
-                        </span>
-                      ))}
-                    </kbd>
-                  </div>
-                </div>
-              ))
-            }
-          </div>
-        ) : (
+	        {selectedList ? sortedShortcuts.length > 0 ? (
+	          <div>
+	            {sortedShortcuts.map((shortcut, index) => (
+	              <ShortcutRow
+	                key={shortcut.id}
+	                shortcut={shortcut}
+	                index={index}
+	                onClick={handleEditShortcut}
+	                onContextMenu={handleShortcutContextMenu}
+	              />
+	            ))}
+	          </div>
+	        ) : (
           <div className="text-center text-gray-500 mt-8">
             <Keyboard className="w-12 h-12 mx-auto mb-4 opacity-50" />
             <p>No shortcuts in this list</p>
@@ -399,7 +548,22 @@ const activeIdentifier =
         Active: {activeAppRecord?.name || activeIdentifier || 'Unknown'}
       </div>
 
-      {/* Modal */}
+	      <ShortcutContextMenu
+	        isOpen={contextMenu.isOpen}
+	        x={contextMenu.isOpen ? contextMenu.x : 0}
+	        y={contextMenu.isOpen ? contextMenu.y : 0}
+	        canMoveUp={canMoveUp}
+	        canMoveDown={canMoveDown}
+	        onRename={handleRenameShortcutFromMenu}
+	        onDelete={handleDeleteShortcutFromMenu}
+	        onAddAbove={handleAddShortcutAbove}
+	        onAddBelow={handleAddShortcutBelow}
+	        onMoveUp={() => handleMoveShortcut('up')}
+	        onMoveDown={() => handleMoveShortcut('down')}
+	        onClose={closeContextMenu}
+	      />
+
+	      {/* Modal */}
       <ShortcutModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
