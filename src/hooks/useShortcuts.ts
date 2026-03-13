@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/core';
+import { listen, emit } from '@tauri-apps/api/event';
 import { ShortcutList, Application, Settings } from '../types';
 import { enable, disable } from '@tauri-apps/plugin-autostart';
 
@@ -11,12 +12,25 @@ export function useShortcuts() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Load all data on mount
-  useEffect(() => {
-    loadData();
-  }, []);
+	  // Load all data on mount
+	  useEffect(() => {
+	    loadData();
+	  }, []);
 
-  const loadData = async () => {
+	  // Reload data whenever another window reports that applications were updated.
+	  // This keeps multiple Tauri windows (popup, settings) in sync without requiring
+	  // a full app restart.
+	  useEffect(() => {
+	    const unlistenPromise = listen('applications-updated', () => {
+	      loadData();
+	    });
+
+	    return () => {
+	      unlistenPromise.then((unlisten) => unlisten());
+	    };
+	  }, []);
+
+	  const loadData = async () => {
     try {
       setLoading(true);
       
@@ -77,15 +91,20 @@ export function useShortcuts() {
     }
   };
 
-  const saveApplication = async (app: Application) => {
-    try {
-      await invoke('save_application', { app });
-      await loadData();
-    } catch (err) {
-      setError(err as string);
-      console.error('Failed to save application:', err);
-    }
-  };
+	  const saveApplication = async (app: Application) => {
+	    try {
+	      await invoke('save_application', { app });
+	      await loadData();
+	      try {
+	        await emit('applications-updated');
+	      } catch (eventError) {
+	        console.error('Failed to emit applications-updated event:', eventError);
+	      }
+	    } catch (err) {
+	      setError(err as string);
+	      console.error('Failed to save application:', err);
+	    }
+	  };
 
   const saveSettings = async (newSettings: Settings) => {
     try {
