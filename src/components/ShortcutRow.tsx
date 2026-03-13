@@ -10,9 +10,10 @@ interface ShortcutRowProps {
     shortcut: Shortcut,
     index: number
   ) => void;
+  tabIndex?: number;
 }
 
-export function ShortcutRow({ shortcut, index, onClick, onContextMenu }: ShortcutRowProps) {
+export function ShortcutRow({ shortcut, index, onClick, onContextMenu, tabIndex = 0 }: ShortcutRowProps) {
   const handleContextMenu = (event: React.MouseEvent<HTMLDivElement>) => {
     if (onContextMenu) {
       event.preventDefault();
@@ -22,6 +23,7 @@ export function ShortcutRow({ shortcut, index, onClick, onContextMenu }: Shortcu
 
   return (
     <div
+      tabIndex={tabIndex}
       onClick={() => onClick(shortcut)}
       onContextMenu={handleContextMenu}
       className={`bg-gray-${index % 2 === 0 ? '7' : '8'}00 px-1 hover:bg-gray-600 transition-colors cursor-pointer`}

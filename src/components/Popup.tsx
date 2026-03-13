@@ -500,6 +500,7 @@ const activeIdentifier =
 	                index={index}
 	                onClick={handleEditShortcut}
 	                onContextMenu={handleShortcutContextMenu}
+					tabIndex={0}
 	              />
 	            ))}
 	          </div>
