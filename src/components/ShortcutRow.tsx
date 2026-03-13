@@ -24,7 +24,7 @@ export function ShortcutRow({ shortcut, index, onClick, onContextMenu, tabIndex 
   return (
     <div
       tabIndex={tabIndex}
-      onClick={() => onClick(shortcut)}
+      //onClick={() => onClick(shortcut)}
       onContextMenu={handleContextMenu}
       className={`bg-gray-${index % 2 === 0 ? '7' : '8'}00 px-1 hover:bg-gray-600 transition-colors cursor-pointer`}
     >
