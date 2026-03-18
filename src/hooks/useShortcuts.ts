@@ -17,37 +17,48 @@ export function useShortcuts() {
 	    loadData();
 	  }, []);
 
-	  // Reload data whenever another window reports that applications were updated.
-	  // This keeps multiple Tauri windows (popup, settings) in sync without requiring
-	  // a full app restart.
+	  // Reload data whenever another window reports that shared data was updated.
+	  // This keeps multiple Tauri windows (popup, settings) in sync without
+	  // requiring a full app restart.
 	  useEffect(() => {
-	    const unlistenPromise = listen('applications-updated', () => {
+	    const unlistenApplicationsPromise = listen('applications-updated', () => {
+	      loadData();
+	    });
+
+	    const unlistenSettingsPromise = listen('settings-updated', () => {
 	      loadData();
 	    });
 
 	    return () => {
-	      unlistenPromise.then((unlisten) => unlisten());
+	      unlistenApplicationsPromise.then((unlisten) => unlisten());
+	      unlistenSettingsPromise.then((unlisten) => unlisten());
 	    };
 	  }, []);
 
 	  const loadData = async () => {
-    try {
-      setLoading(true);
-      
-      // Initialize defaults if no data exists
-      await invoke('initialize_defaults');
-
-      const [listsData, appsData, settingsData, activeAppData] = await Promise.all([
-        invoke<ShortcutList[]>('get_all_lists'),
-        invoke<Application[]>('get_all_applications'),
-        invoke<Settings>('get_settings'),
-        invoke<string>('get_active_application'),
-        invoke<string>('get_active_window_title'),
-      ]);
-
-      setShortcutLists(listsData);
-      setApplications(appsData);
-      setSettings(settingsData);
+	    try {
+	      setLoading(true);
+	      
+	      // Initialize defaults if no data exists
+	      await invoke('initialize_defaults');
+	
+	      const [
+	        listsData,
+	        appsData,
+	        settingsData,
+	        activeAppData,
+	        _activeWindowTitle,
+	      ] = await Promise.all([
+	        invoke<ShortcutList[]>('get_all_lists'),
+	        invoke<Application[]>('get_all_applications'),
+	        invoke<Settings>('get_settings'),
+	        invoke<string>('get_active_application'),
+	        invoke<string>('get_active_window_title'),
+	      ]);
+	
+	      setShortcutLists(listsData);
+	      setApplications(appsData);
+	      setSettings(settingsData);
 
       // Throws "os error 2" in dev mode so skip it.
       if (!import.meta.env.DEV) {
@@ -106,30 +117,35 @@ export function useShortcuts() {
 	    }
 	  };
 
-  const saveSettings = async (newSettings: Settings) => {
-    try {
-      await invoke('save_settings', { settings: newSettings });
-      await invoke('refresh_global_hotkey');
-      setSettings(newSettings);
-
-      
-      // Throws "os error 2" in dev mode so skip it.
-      if (!import.meta.env.DEV) {
-        try {
-          if (newSettings.run_on_startup) {
-            await enable();
-          } else {
-            await disable();
-          }
-        } catch (e) {
-          console.error('Failed to update autostart:', e);
-        }
-      }
-    } catch (err) {
-      setError(err as string);
-      console.error('Failed to save settings:', err);
-    }
-  };
+	  const saveSettings = async (newSettings: Settings) => {
+	    try {
+	      await invoke('save_settings', { settings: newSettings });
+	      await invoke('refresh_global_hotkey');
+	      setSettings(newSettings);
+	
+	      try {
+	        await emit('settings-updated');
+	      } catch (eventError) {
+	        console.error('Failed to emit settings-updated event:', eventError);
+	      }
+	
+	      // Throws "os error 2" in dev mode so skip it.
+	      if (!import.meta.env.DEV) {
+	        try {
+	          if (newSettings.run_on_startup) {
+	            await enable();
+	          } else {
+	            await disable();
+	          }
+	        } catch (e) {
+	          console.error('Failed to update autostart:', e);
+	        }
+	      }
+	    } catch (err) {
+	      setError(err as string);
+	      console.error('Failed to save settings:', err);
+	    }
+	  };
 
   const refreshActiveApp = async () => {
     try {
