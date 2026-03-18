@@ -46,6 +46,14 @@ fn default_window_position() -> String {
     "BottomRight".to_string()
 }
 
+fn default_show_app_name_in_dropdown() -> bool {
+    true
+}
+
+fn default_show_all_lists() -> bool {
+    false
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Settings {
     pub global_hotkey: String,
@@ -54,6 +62,10 @@ pub struct Settings {
     pub keyboard_shortcuts: KeyboardShortcuts,
     #[serde(default = "default_window_position")]
     pub window_position: String,
+    #[serde(default = "default_show_app_name_in_dropdown")]
+    pub show_app_name_in_dropdown: bool,
+    #[serde(default = "default_show_all_lists")]
+    pub show_all_lists: bool,
 }
 
 fn default_settings() -> Settings {
@@ -69,6 +81,8 @@ fn default_settings() -> Settings {
             add_new: "Control+N".to_string(),
         },
         window_position: default_window_position(),
+        show_app_name_in_dropdown: default_show_app_name_in_dropdown(),
+        show_all_lists: default_show_all_lists(),
     }
 }
 

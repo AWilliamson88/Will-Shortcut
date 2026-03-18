@@ -28,6 +28,31 @@ fn get_all_lists() -> Result<Vec<storage::ShortcutList>, String> {
     storage::load_lists()
 }
 
+// Get shortcut lists for specific app
+#[tauri::command]
+fn get_lists_for_application(app_id: String) -> Result<Vec<storage::ShortcutList>, String> {
+    storage::load_lists_for_application(&app_id)
+}
+
+// Get shortcut lists for the currently active application
+#[tauri::command]
+fn get_lists_for_active_application() -> Result<Vec<storage::ShortcutList>, String> {
+    // Determine the active application's identifier (as reported by the OS)
+    let active_name = window_detection::get_active_application()?;
+
+    // Find the matching Application by detection_name or process_name
+    let apps = storage::load_applications()?;
+    if let Some(app) = apps
+        .into_iter()
+        .find(|a| a.detection_name == active_name || a.process_name == active_name)
+    {
+        storage::load_lists_for_application(&app.id)
+    } else {
+        // If no matching application is registered, return an empty list
+        Ok(Vec::new())
+    }
+}
+
 // Save a shortcut list
 #[tauri::command]
 fn save_list(list: storage::ShortcutList) -> Result<(), String> {
@@ -168,6 +193,8 @@ pub fn run() {
             get_active_application,
             get_active_window_title,
             get_all_lists,
+            get_lists_for_application,
+            get_lists_for_active_application,
             save_list,
             delete_list,
             get_all_applications,
@@ -240,7 +267,9 @@ pub fn run() {
 	                        delete: "Delete".into(),
 	                        add_new: "Control+N".into(),
 	                    },
-	                    window_position: "BottomRight".into(),
+                    window_position: "BottomRight".into(),
+	                    show_app_name_in_dropdown: true,
+	                    show_all_lists: false,
 	                }
 	            });
 
@@ -344,6 +373,8 @@ fn register_global_hotkey(app: &tauri::AppHandle, hotkey: &str) -> Result<(), St
                                                     add_new: "Control+N".into(),
                                                 },
                                                 window_position: "BottomRight".into(),
+	                                                show_app_name_in_dropdown: true,
+	                                                show_all_lists: false,
                                             }
                                         });
 
