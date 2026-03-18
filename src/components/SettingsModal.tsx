@@ -27,7 +27,11 @@ export function SettingsModal({
 
   useEffect(() => {
     if (isOpen && settings) {
-      setLocalSettings(settings);
+      setLocalSettings({
+        ...settings,
+	        show_app_name_in_dropdown: settings.show_app_name_in_dropdown ?? true,
+	        show_all_lists: settings.show_all_lists ?? false,
+      });
       setWindowPosition(settings.window_position ?? 'BottomRight');
     }
   }, [isOpen, settings]);
@@ -189,22 +193,83 @@ export function SettingsModal({
 	                </div>
 	              </div>
 
-	              <div className="flex items-center justify-between">
-	                <label className="text-xs text-gray-300">
-	                  Run on system startup
-	                </label>
-	                <input
-	                  type="checkbox"
-	                  checked={localSettings.run_on_startup}
-	                  onChange={e =>
-	                    setLocalSettings(prev =>
-	                      prev
-	                        ? { ...prev, run_on_startup: e.target.checked }
-	                        : prev,
-	                    )
-	                  }
-	                />
-	              </div>
+              <div className="mt-3 w-[300px] border border-gray-700 rounded bg-neutral-900 divide-y divide-gray-700">
+                <div className="flex items-center justify-between px-3 py-2">
+                  <label 
+				  	className="text-xs text-gray-300"
+					htmlFor="startUp"
+				>
+                    Run on system startup
+                  </label>
+                  <input
+				  	name="startUp"
+					id="startUp"
+                    type="checkbox"
+                    checked={localSettings.run_on_startup}
+                    onChange={e =>
+                      setLocalSettings(prev =>
+                        prev
+                          ? { ...prev, run_on_startup: e.target.checked }
+                          : prev,
+                      )
+                    }
+                  />
+                </div>
+                <div 
+					className="flex items-center justify-between px-3 py-2"
+					title="When enabled, show the application name before the list name in the popup dropdown."
+				>
+	                  <label 
+					  	className="text-xs text-gray-300"
+						htmlFor="showAppName"
+					>
+	                    Show app name in list dropdown
+	                  </label>
+                  <input
+                    type="checkbox"
+					name="showAppName"
+					id="showAppName"
+                    checked={localSettings.show_app_name_in_dropdown ?? true}
+                    onChange={e =>
+                      setLocalSettings(prev =>
+                        prev
+                          ? {
+                              ...prev,
+                              show_app_name_in_dropdown: e.target.checked,
+                            }
+                          : prev,
+                      )
+                    }
+                  />
+                </div>
+		                <div 
+						className="flex items-center justify-between px-3 py-2"
+						title="When enabled, show lists for all applications in the popup dropdown instead of only the active app."
+					>
+					          <label 
+						  	className="text-xs text-gray-300"
+								htmlFor="showAllLists"
+							>
+					                    Show all lists in dropdown
+					                  </label>
+		                  <input
+		                    type="checkbox"
+							name="showAllLists"
+							id="showAllLists"
+		                    checked={localSettings.show_all_lists ?? false}
+		                    onChange={e =>
+		                      setLocalSettings(prev =>
+		                        prev
+		                          ? {
+		                              ...prev,
+		                              show_all_lists: e.target.checked,
+		                            }
+		                          : prev,
+		                      )
+		                    }
+		                  />
+		                </div>
+              </div>
 	            </>
 	          )}
 
