@@ -39,4 +39,6 @@ export interface Settings {
   run_on_startup: boolean;
   keyboard_shortcuts: KeyboardShortcuts;
   window_position: string;
+  show_app_name_in_dropdown?: boolean;
+  show_all_lists?: boolean;
 }
