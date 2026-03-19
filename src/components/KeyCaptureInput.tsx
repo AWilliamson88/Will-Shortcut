@@ -209,6 +209,45 @@ export function KeyCaptureInput({ value, onChange, placeholder, onRequestNextFie
 	
 	  const showPrompt = isCaptureMode && isCapturing && capturedSequence.length === 0 && !currentKeys;
 
+  const handleManualKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Only apply in manual (non-capture) mode
+    if (isCaptureMode) return;
+
+    const arrowMap: Record<string, string> = {
+      ArrowUp: '\u2191',
+      ArrowDown: '\u2193',
+      ArrowLeft: '\u2190',
+      ArrowRight: '\u2192',
+    };
+
+    const symbol = arrowMap[e.key];
+    // Only handle bare arrow keys (no modifiers)
+    if (!symbol || e.ctrlKey || e.altKey || e.metaKey || e.shiftKey) {
+      return;
+    }
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    const input = inputRef.current;
+    if (!input) return;
+
+    const currentValue = value ?? '';
+    const start = input.selectionStart ?? currentValue.length;
+    const end = input.selectionEnd ?? currentValue.length;
+
+    const newValue =
+      currentValue.slice(0, start) + symbol + currentValue.slice(end);
+    const newPos = start + symbol.length;
+
+    onChange(newValue);
+
+    // Restore caret position after the inserted symbol
+    requestAnimationFrame(() => {
+      input.setSelectionRange(newPos, newPos);
+    });
+  };
+
 	  return (
 	    <div className="flex items-center gap-2">
 	      <div className="relative flex-1">
@@ -227,6 +266,7 @@ export function KeyCaptureInput({ value, onChange, placeholder, onRequestNextFie
 	              setIsCapturing(true);
 	            }
 	          }}
+          onKeyDown={handleManualKeyDown}
 	          onBlur={() => {
 	            if (isCaptureMode) {
 	              setIsCapturing(false);
@@ -241,10 +281,8 @@ export function KeyCaptureInput({ value, onChange, placeholder, onRequestNextFie
 	              : 'Type key combination (e.g. Ctrl+Shift+[ )')
 	          }
 	          readOnly={isCaptureMode && isCapturing}
-	          className={`w-full bg-gray-900 text-white px-3 py-2 rounded border ${
-	            isCaptureMode && isCapturing ? 'border-blue-500' : 'border-gray-700'
-	          } focus:outline-none ${
-	            isCaptureMode && isCapturing ? 'cursor-pointer' : 'cursor-text'
+          className={`w-full bg-gray-900 text-white px-3 py-2 rounded border ${isCaptureMode && isCapturing ? 'border-blue-500' : 'border-gray-700'
+            } focus:outline-none ${isCaptureMode && isCapturing ? 'cursor-pointer' : 'cursor-text'
 	          }`}
 	        />
 	        {showPrompt && (

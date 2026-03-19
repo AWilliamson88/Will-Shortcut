@@ -1,3 +1,4 @@
+import type React from 'react';
 import { useState, useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 import { Shortcut } from '../types';
@@ -31,6 +32,41 @@ interface ShortcutModalProps {
       setDescription('');
     }
   }, [shortcut, isOpen]);
+
+	  const handleDescriptionKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+	    const arrowMap: Record<string, string> = {
+	      ArrowUp: '↑',
+	      ArrowDown: '↓',
+	      ArrowLeft: '←',
+	      ArrowRight: '→',
+	    };
+
+	    const symbol = arrowMap[e.key];
+	    // Only handle bare arrow keys (no modifiers)
+	    if (!symbol || e.ctrlKey || e.altKey || e.metaKey || e.shiftKey) {
+	      return;
+	    }
+
+	    e.preventDefault();
+	    e.stopPropagation();
+
+	    const input = descriptionInputRef.current;
+	    if (!input) return;
+
+	    const start = input.selectionStart ?? description.length;
+	    const end = input.selectionEnd ?? description.length;
+
+	    const newValue =
+	      description.slice(0, start) + symbol + description.slice(end);
+	    const newPos = start + symbol.length;
+
+	    setDescription(newValue);
+
+	    // Restore caret position after the inserted symbol
+	    requestAnimationFrame(() => {
+	      input.setSelectionRange(newPos, newPos);
+	    });
+	  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -95,7 +131,8 @@ interface ShortcutModalProps {
                 ref={descriptionInputRef}
                 type="text"
                 value={description}
-                onChange={(e) => setDescription(e.target.value)}
+	                onChange={(e) => setDescription(e.target.value)}
+	                onKeyDown={handleDescriptionKeyDown}
                 placeholder="e.g., Open Command Palette"
                 className="w-full bg-gray-900 text-white px-3 py-2 rounded border border-gray-700 focus:outline-none focus:border-blue-500"
               />
