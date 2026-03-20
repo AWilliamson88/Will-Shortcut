@@ -116,6 +116,7 @@ interface ShortcutModalProps {
                 value={keyCombo}
                 onChange={setKeyCombo}
                 placeholder="Click and press keys..."
+				autoFocus
                 onRequestNextField={() => {
                   descriptionInputRef.current?.focus();
                 }}
