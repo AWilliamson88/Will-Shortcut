@@ -1,4 +1,4 @@
-# Shortcuts
+# Will-Shortcut
 
 # Tauri + React + Typescript
 
@@ -13,7 +13,6 @@ This template should help get you started developing with Tauri, React and Types
 ```powershell
 npm install
 npm run tauri init
-npm run tauri dev
 ```
 
 ## Step 2: Add the UI components
@@ -25,9 +24,16 @@ npm install lucide-react
 npm install uuid
 ```
 
-## Step 3: Test CRUD Operations
+## Step 3: Test App
 
 ```powershell
 npm run tauri dev
 ```
 
+## Step 4: Build App
+
+```powershell
+npm run tauri build
+```
+- Find the installer in `src-tauri\target\release\`
+- Run the installer.
