@@ -281,6 +281,38 @@ export function Popup() {
 		);
 	};
 
+	// Keyboard-based move for the focused row (Alt+Up / Alt+Down)
+	const handleKeyboardMoveShortcut = async (
+		shortcutId: string,
+		direction: 'up' | 'down',
+	) => {
+		const selectedList = getSelectedList();
+		if (!selectedList) return;
+
+		const sorted = sortShortcuts(selectedList.shortcuts);
+		const fromIndex = sorted.findIndex((s) => s.id === shortcutId);
+		if (fromIndex === -1) return;
+
+		const toIndex = direction === 'up' ? fromIndex - 1 : fromIndex + 1;
+
+			if (toIndex < 0 || toIndex >= sorted.length) {
+				return;
+			}
+
+			await updateSelectedListShortcuts((shortcuts) =>
+				moveShortcut(shortcuts, fromIndex, toIndex),
+			);
+			
+			// After the list updates and re-renders, restore focus to the same shortcut
+			// (now at its new position) so Alt+Up/Down can be pressed repeatedly.
+			requestAnimationFrame(() => {
+				const el = document.querySelector<HTMLElement>(
+					`[data-shortcut-id="${shortcutId}"]`,
+				);
+				el?.focus();
+			});
+	};
+
 	const handleDeleteShortcutFromMenu = async () => {
 		if (!contextMenu.isOpen) return;
 		await handleDeleteShortcut(contextMenu.shortcutId);
@@ -362,6 +394,56 @@ export function Popup() {
 		await saveList(updatedList);
 	};
 
+	const activeIdentifier =
+		detectedActiveApp ||
+		activeApp?.detection_name ||
+		activeApp?.process_name ||
+		'';
+
+	const activeAppRecord = activeIdentifier
+		? applications.find((app) => {
+			const matchKey = app.detection_name || app.process_name;
+			return matchKey === activeIdentifier;
+		})
+		: undefined;
+
+	const hasListForCurrentApp = shortcutLists.some((list) => {
+		const app = applications.find((a) => a.id === list.application_id);
+		if (!app) return false;
+		const matchKey = app.detection_name || app.process_name;
+		return matchKey === activeIdentifier;
+	});
+
+	// Keyboard shortcut: Alt+N opens the "Add Shortcut" modal while the popup is open.
+	useEffect(() => {
+		const handleKeyDown = (e: KeyboardEvent) => {
+			if (
+				e.altKey &&
+				!e.ctrlKey &&
+				!e.shiftKey &&
+				!e.metaKey &&
+				e.key.toLowerCase() === 'n'
+			) {
+				// Only trigger when there is a list for the current app and no other modal is open
+				if (!hasListForCurrentApp || isModalOpen || isListModalOpen) {
+					return;
+				}
+
+				e.preventDefault();
+				e.stopPropagation();
+
+				setEditingShortcut(undefined);
+				setInsertIndex(null);
+				setIsModalOpen(true);
+			}
+		};
+
+		window.addEventListener('keydown', handleKeyDown);
+		return () => {
+			window.removeEventListener('keydown', handleKeyDown);
+		};
+	}, [hasListForCurrentApp, isModalOpen, isListModalOpen]);
+
 	if (loading) {
 		return (
 			<div className="flex items-center justify-center h-screen bg-gray-900 text-white">
@@ -383,67 +465,19 @@ export function Popup() {
 		);
 	}
 
-	const activeIdentifier =
-		detectedActiveApp ||
-		activeApp?.detection_name ||
-		activeApp?.process_name ||
-		'';
 
-	const activeAppRecord = activeIdentifier
-		? applications.find((app) => {
-			const matchKey = app.detection_name || app.process_name;
-			return matchKey === activeIdentifier;
-		})
-		: undefined;
-
-	const hasListForCurrentApp = shortcutLists.some((list) => {
-		const app = applications.find((a) => a.id === list.application_id);
-		if (!app) return false;
-		const matchKey = app.detection_name || app.process_name;
-		return matchKey === activeIdentifier;
-	});
-	
-		// Keyboard shortcut: Alt+N opens the "Add Shortcut" modal while the popup is open.
-		useEffect(() => {
-			const handleKeyDown = (e: KeyboardEvent) => {
-				if (
-					e.altKey &&
-					!e.ctrlKey &&
-					!e.shiftKey &&
-					!e.metaKey &&
-					e.key.toLowerCase() === 'n'
-				) {
-					// Only trigger when there is a list for the current app and no other modal is open
-					if (!hasListForCurrentApp || isModalOpen || isListModalOpen) {
-						return;
-					}
-					
-					e.preventDefault();
-					e.stopPropagation();
-					
-					setEditingShortcut(undefined);
-					setInsertIndex(null);
-					setIsModalOpen(true);
-				}
-			};
-			
-			window.addEventListener('keydown', handleKeyDown);
-			return () => {
-				window.removeEventListener('keydown', handleKeyDown);
-			};
-		}, [hasListForCurrentApp, isModalOpen, isListModalOpen]);
 
 	const showAppNameInDropdown = settings?.show_app_name_in_dropdown ?? true;
-		const showAllLists = settings?.show_all_lists ?? false;
+	const showAllLists = settings?.show_all_lists ?? false;
 
-		const dropdownLists: ShortcutList[] = showAllLists
-			? shortcutLists
-			: shortcutLists.filter((list) => {
-				const app = applications.find((a) => a.id === list.application_id);
-				if (!app) return false;
-				const matchKey = app.detection_name || app.process_name;
-				return matchKey === activeIdentifier;
-			});
+	const dropdownLists: ShortcutList[] = showAllLists
+		? shortcutLists
+		: shortcutLists.filter((list) => {
+			const app = applications.find((a) => a.id === list.application_id);
+			if (!app) return false;
+			const matchKey = app.detection_name || app.process_name;
+			return matchKey === activeIdentifier;
+		});
 
 	const defaultNewListName = (() => {
 		if (!activeIdentifier) return 'New list';
@@ -496,24 +530,24 @@ export function Popup() {
 					onChange={(e) => {
 						setSelectedListId(e.target.value)
 					}}
-						>
-							{dropdownLists.length === 0 ? (
-								<option value="">No lists available</option>
-							) : (
-								dropdownLists.map((list: ShortcutList) => {
-									const app = applications.find((a) => a.id === list.application_id);
-									const appLabel = app?.name || 'Unknown';
-									const optionLabel = showAppNameInDropdown
-										? `${appLabel} - ${list.name}`
-										: list.name;
-									return (
-										<option key={list.id} value={list.id}>
-											{optionLabel}
-										</option>
-									);
-								})
-							)}
-						</select>
+				>
+					{dropdownLists.length === 0 ? (
+						<option value="">No lists available</option>
+					) : (
+						dropdownLists.map((list: ShortcutList) => {
+							const app = applications.find((a) => a.id === list.application_id);
+							const appLabel = app?.name || 'Unknown';
+							const optionLabel = showAppNameInDropdown
+								? `${appLabel} - ${list.name}`
+								: list.name;
+							return (
+								<option key={list.id} value={list.id}>
+									{optionLabel}
+								</option>
+							);
+						})
+					)}
+				</select>
 				<button
 					type="button"
 					onClick={() => {
@@ -547,6 +581,8 @@ export function Popup() {
 								onClick={handleEditShortcut}
 								onContextMenu={handleShortcutContextMenu}
 								tabIndex={0}
+								onMoveUp={() => handleKeyboardMoveShortcut(shortcut.id, 'up')}
+								onMoveDown={() => handleKeyboardMoveShortcut(shortcut.id, 'down')}
 							/>
 						))}
 					</div>
