@@ -3,6 +3,22 @@
 version = 4
 
 [[package]]
+name = "Will-Shortcut"
+version = "0.1.3"
+dependencies = [
+ "active-win-pos-rs",
+ "directories",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-autostart",
+ "tauri-plugin-global-shortcut",
+ "tauri-plugin-opener",
+ "uuid",
+]
+
+[[package]]
 name = "active-win-pos-rs"
 version = "0.8.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4768,22 +4784,6 @@ dependencies = [
  "home",
  "once_cell",
  "rustix 0.38.44",
-]
-
-[[package]]
-name = "will-shortcut"
-version = "0.1.2"
-dependencies = [
- "active-win-pos-rs",
- "directories",
- "serde",
- "serde_json",
- "tauri",
- "tauri-build",
- "tauri-plugin-autostart",
- "tauri-plugin-global-shortcut",
- "tauri-plugin-opener",
- "uuid",
 ]
 
 [[package]]
