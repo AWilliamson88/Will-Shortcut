@@ -3,19 +3,30 @@ import { useState, useRef, useEffect } from 'react';
 import { Keyboard, Type } from 'lucide-react';
 
 interface KeyCaptureInputProps {
-  value: string;
-  onChange: (value: string) => void;
-  placeholder?: string;
-  onRequestNextField?: () => void;
-  disableToggle?: boolean;
-}
-
-export function KeyCaptureInput({ value, onChange, placeholder, onRequestNextField, disableToggle = false }: KeyCaptureInputProps) {
+	  value: string;
+	  onChange: (value: string) => void;
+	  placeholder?: string;
+	  onRequestNextField?: () => void;
+	  disableToggle?: boolean;
+	  autoFocus?: boolean;
+	}
+	
+	export function KeyCaptureInput({ value, onChange, placeholder, onRequestNextField, disableToggle = false, autoFocus = false }: KeyCaptureInputProps) {
   const [isCaptureMode, setIsCaptureMode] = useState(true); // true = capture, false = plain text
   const [isCapturing, setIsCapturing] = useState(false);
   const [currentKeys, setCurrentKeys] = useState<string>('');
   const [capturedSequence, setCapturedSequence] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
+
+	  // When requested, focus the input when this component mounts (e.g. when the modal opens)
+	  useEffect(() => {
+	    if (autoFocus && inputRef.current) {
+	      inputRef.current.focus();
+	      if (isCaptureMode) {
+	        setIsCapturing(true);
+	      }
+	    }
+	  }, [autoFocus, isCaptureMode]);
 
   useEffect(() => {
     // Only attach listeners while actively capturing in capture mode
@@ -84,15 +95,15 @@ export function KeyCaptureInput({ value, onChange, placeholder, onRequestNextFie
         return;
       }
 
-	      // Require at least one modifier (Ctrl/Shift/Alt/Win),
+      // Require at least one modifier (Ctrl/Shift/Alt/Win),
       // except allow bare function keys like F1–F12.
-	      const hasModifier = e.ctrlKey || e.shiftKey || e.altKey || e.metaKey;
+      const hasModifier = e.ctrlKey || e.shiftKey || e.altKey || e.metaKey;
       const isFunctionKey = /^F([1-9]|1[0-2])$/.test(mainKey);
-	      if (!hasModifier && !isFunctionKey) {
-	        // No modifier held and not a function key → ignore this key for capturing
-	        setCurrentKeys('');
-	        return;
-	      }
+      if (!hasModifier && !isFunctionKey) {
+        // No modifier held and not a function key → ignore this key for capturing
+        setCurrentKeys('');
+        return;
+      }
 
       const keys: string[] = [];
 
