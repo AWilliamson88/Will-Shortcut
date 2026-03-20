@@ -85,9 +85,9 @@ export function KeyCaptureInput({ value, onChange, placeholder, onRequestNextFie
       }
 
 	      // Require at least one modifier (Ctrl/Shift/Alt/Win),
-	      // except allow bare function keys like F1–F24.
+      // except allow bare function keys like F1–F12.
 	      const hasModifier = e.ctrlKey || e.shiftKey || e.altKey || e.metaKey;
-	      const isFunctionKey = /^F([1-9]|1[0-9]|2[0-4])$/.test(mainKey);
+      const isFunctionKey = /^F([1-9]|1[0-2])$/.test(mainKey);
 	      if (!hasModifier && !isFunctionKey) {
 	        // No modifier held and not a function key → ignore this key for capturing
 	        setCurrentKeys('');
@@ -297,6 +297,7 @@ export function KeyCaptureInput({ value, onChange, placeholder, onRequestNextFie
       {!disableToggle && (
         <button
           type="button"
+          tabIndex={0}
           onClick={() => {
             setIsCapturing(false);
             setCurrentKeys('');
