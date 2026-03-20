@@ -402,6 +402,36 @@ export function Popup() {
 		const matchKey = app.detection_name || app.process_name;
 		return matchKey === activeIdentifier;
 	});
+	
+		// Keyboard shortcut: Alt+N opens the "Add Shortcut" modal while the popup is open.
+		useEffect(() => {
+			const handleKeyDown = (e: KeyboardEvent) => {
+				if (
+					e.altKey &&
+					!e.ctrlKey &&
+					!e.shiftKey &&
+					!e.metaKey &&
+					e.key.toLowerCase() === 'n'
+				) {
+					// Only trigger when there is a list for the current app and no other modal is open
+					if (!hasListForCurrentApp || isModalOpen || isListModalOpen) {
+						return;
+					}
+					
+					e.preventDefault();
+					e.stopPropagation();
+					
+					setEditingShortcut(undefined);
+					setInsertIndex(null);
+					setIsModalOpen(true);
+				}
+			};
+			
+			window.addEventListener('keydown', handleKeyDown);
+			return () => {
+				window.removeEventListener('keydown', handleKeyDown);
+			};
+		}, [hasListForCurrentApp, isModalOpen, isListModalOpen]);
 
 	const showAppNameInDropdown = settings?.show_app_name_in_dropdown ?? true;
 		const showAllLists = settings?.show_all_lists ?? false;
@@ -547,7 +577,7 @@ export function Popup() {
 						className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
 					>
 						<Plus className="w-4 h-4" />
-						Add Shortcut
+						Add Shortcut (Alt + N)
 					</button>
 				) : (
 					<button
