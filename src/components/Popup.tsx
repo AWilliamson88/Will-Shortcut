@@ -31,7 +31,7 @@ type ContextMenuState =
 	};
 
 export function Popup() {
-	const { shortcutLists, applications, settings, activeApp, loading, error, saveList, deleteList, dumpApps, saveApplication } = useShortcuts();
+	const { shortcutLists, applications, settings, activeApp, loading, error, saveList, saveListWithDebounce, deleteList, dumpApps, saveApplication } = useShortcuts();
 	const [selectedListId, setSelectedListId] = useState<string | null>(null);
 	const [isModalOpen, setIsModalOpen] = useState(false);
 	const [editingShortcut, setEditingShortcut] = useState<Shortcut | undefined>(undefined);
@@ -182,6 +182,23 @@ export function Popup() {
 		await saveList(updatedList);
 	};
 
+	// Saves the list using debounce timer (used for reordering)
+	const updateReorderedListShortcuts = (
+		transform: (shortcuts: Shortcut[]) => Shortcut[],
+	) => {
+		const selectedList = getSelectedList();
+		if (!selectedList) return;
+
+		const updatedShortcuts = transform(selectedList.shortcuts);
+		const updatedList: ShortcutList = {
+			...selectedList,
+			shortcuts: updatedShortcuts,
+			updated_at: new Date().toISOString(),
+		};
+
+		saveListWithDebounce(updatedList);
+	};
+
 	const handleAddShortcut = () => {
 		setEditingShortcut(undefined);
 		setInsertIndex(null);
@@ -276,7 +293,7 @@ export function Popup() {
 			return;
 		}
 
-		await updateSelectedListShortcuts((shortcuts) =>
+		updateReorderedListShortcuts((shortcuts) =>
 			moveShortcut(shortcuts, fromIndex, toIndex),
 		);
 	};
@@ -295,22 +312,22 @@ export function Popup() {
 
 		const toIndex = direction === 'up' ? fromIndex - 1 : fromIndex + 1;
 
-			if (toIndex < 0 || toIndex >= sorted.length) {
-				return;
-			}
+		if (toIndex < 0 || toIndex >= sorted.length) {
+			return;
+		}
 
-			await updateSelectedListShortcuts((shortcuts) =>
-				moveShortcut(shortcuts, fromIndex, toIndex),
+		updateReorderedListShortcuts((shortcuts) =>
+			moveShortcut(shortcuts, fromIndex, toIndex),
+		);
+
+		// After the list updates and re-renders, restore focus to the same shortcut
+		// (now at its new position) so Alt+Up/Down can be pressed repeatedly.
+		requestAnimationFrame(() => {
+			const el = document.querySelector<HTMLElement>(
+				`[data-shortcut-id="${shortcutId}"]`,
 			);
-			
-			// After the list updates and re-renders, restore focus to the same shortcut
-			// (now at its new position) so Alt+Up/Down can be pressed repeatedly.
-			requestAnimationFrame(() => {
-				const el = document.querySelector<HTMLElement>(
-					`[data-shortcut-id="${shortcutId}"]`,
-				);
-				el?.focus();
-			});
+			el?.focus();
+		});
 	};
 
 	const handleDeleteShortcutFromMenu = async () => {
