@@ -1,5 +1,6 @@
 import type React from 'react';
 import type { Shortcut } from '../types';
+	import { eventMatchesCombo } from '../utils/hotkeyUtils';
 
 interface ShortcutRowProps {
   shortcut: Shortcut;
@@ -10,12 +11,16 @@ interface ShortcutRowProps {
     shortcut: Shortcut,
     index: number
   ) => void;
-  tabIndex?: number;
-  onMoveUp?: (shortcut: Shortcut) => void;
-  onMoveDown?: (shortcut: Shortcut) => void;
+	  tabIndex?: number;
+	  onMoveUp?: (shortcut: Shortcut) => void;
+	  onMoveDown?: (shortcut: Shortcut) => void;
+	  onDelete?: (shortcut: Shortcut) => void;
+	  moveUpHotkey?: string;
+	  moveDownHotkey?: string;
+	  deleteHotkey?: string;
 }
 
-export function ShortcutRow({ shortcut, index, onClick, onContextMenu, tabIndex = 0, onMoveUp, onMoveDown }: ShortcutRowProps) {
+	export function ShortcutRow({ shortcut, index, onClick, onContextMenu, tabIndex = 0, onMoveUp, onMoveDown, onDelete, moveUpHotkey, moveDownHotkey, deleteHotkey }: ShortcutRowProps) {
   // Keep onClick in the props for future use; prevent unused parameter warning
   void onClick;
 
@@ -26,26 +31,27 @@ export function ShortcutRow({ shortcut, index, onClick, onContextMenu, tabIndex 
     }
   };
 
-  const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
-    if (
-      !event.altKey ||
-      event.ctrlKey ||
-      event.shiftKey ||
-      event.metaKey
-    ) {
-      return;
-    }
-
-    if (event.key === 'ArrowUp' && onMoveUp) {
-      event.preventDefault();
-      event.stopPropagation();
-      onMoveUp(shortcut);
-    } else if (event.key === 'ArrowDown' && onMoveDown) {
-      event.preventDefault();
-      event.stopPropagation();
-      onMoveDown(shortcut);
-    }
-  };
+	  const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+	    if (onMoveUp && eventMatchesCombo(event, moveUpHotkey)) {
+	      event.preventDefault();
+	      event.stopPropagation();
+	      onMoveUp(shortcut);
+	      return;
+	    }
+	
+	    if (onMoveDown && eventMatchesCombo(event, moveDownHotkey)) {
+	      event.preventDefault();
+	      event.stopPropagation();
+	      onMoveDown(shortcut);
+	      return;
+	    }
+	
+	    if (onDelete && eventMatchesCombo(event, deleteHotkey)) {
+	      event.preventDefault();
+	      event.stopPropagation();
+	      onDelete(shortcut);
+	    }
+	  };
 
   return (
     <div

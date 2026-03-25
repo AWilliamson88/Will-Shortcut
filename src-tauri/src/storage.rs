@@ -42,6 +42,16 @@ pub struct KeyboardShortcuts {
     pub add_new: String,
 }
 
+fn default_keyboard_shortcuts() -> KeyboardShortcuts {
+    KeyboardShortcuts {
+        move_up: "Alt+Up".to_string(),
+        move_down: "Alt+Down".to_string(),
+        duplicate: "Ctrl+D".to_string(),
+        delete: "Delete".to_string(),
+        add_new: "Ctrl+N".to_string(),
+    }
+}
+
 fn default_window_position() -> String {
     "BottomRight".to_string()
 }
@@ -59,6 +69,7 @@ pub struct Settings {
     pub global_hotkey: String,
     pub always_on_top: bool,
     pub run_on_startup: bool,
+    #[serde(default = "default_keyboard_shortcuts")]
     pub keyboard_shortcuts: KeyboardShortcuts,
     #[serde(default = "default_window_position")]
     pub window_position: String,
@@ -70,16 +81,10 @@ pub struct Settings {
 
 fn default_settings() -> Settings {
     Settings {
-        global_hotkey: "CommandOrControl+Shift+Alt+K".to_string(),
+        global_hotkey: "Ctrl+Shift+Alt+K".to_string(),
         always_on_top: true,
         run_on_startup: true,
-        keyboard_shortcuts: KeyboardShortcuts {
-            move_up: "Control+Up".to_string(),
-            move_down: "Control+Down".to_string(),
-            duplicate: "Control+D".to_string(),
-            delete: "Delete".to_string(),
-            add_new: "Control+N".to_string(),
-        },
+        keyboard_shortcuts: default_keyboard_shortcuts(),
         window_position: default_window_position(),
         show_app_name_in_dropdown: default_show_app_name_in_dropdown(),
         show_all_lists: default_show_all_lists(),

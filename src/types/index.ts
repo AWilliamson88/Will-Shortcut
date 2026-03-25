@@ -31,6 +31,8 @@ export interface KeyboardShortcuts {
   duplicate: string;
   delete: string;
   add_new: string;
+  add_above: string;
+  add_below: string;
 }
 
 export interface Settings {

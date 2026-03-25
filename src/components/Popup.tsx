@@ -19,6 +19,7 @@ import {
 	insertShortcutAt,
 	moveShortcut,
 } from '../utils/shortcutListUtils';
+	import { eventMatchesCombo } from '../utils/hotkeyUtils';
 
 type ContextMenuState =
 	| { isOpen: false }
@@ -30,8 +31,8 @@ type ContextMenuState =
 		y: number;
 	};
 
-export function Popup() {
-	const { shortcutLists, applications, settings, activeApp, loading, error, saveList, saveListWithDebounce, deleteList, dumpApps, saveApplication } = useShortcuts();
+	export function Popup() {
+		const { shortcutLists, applications, settings, activeApp, loading, error, saveList, saveListWithDebounce, deleteList, dumpApps, saveApplication } = useShortcuts();
 	const [selectedListId, setSelectedListId] = useState<string | null>(null);
 	const [isModalOpen, setIsModalOpen] = useState(false);
 	const [editingShortcut, setEditingShortcut] = useState<Shortcut | undefined>(undefined);
@@ -429,37 +430,35 @@ export function Popup() {
 		if (!app) return false;
 		const matchKey = app.detection_name || app.process_name;
 		return matchKey === activeIdentifier;
-	});
-
-	// Keyboard shortcut: Alt+N opens the "Add Shortcut" modal while the popup is open.
-	useEffect(() => {
-		const handleKeyDown = (e: KeyboardEvent) => {
-			if (
-				e.altKey &&
-				!e.ctrlKey &&
-				!e.shiftKey &&
-				!e.metaKey &&
-				e.key.toLowerCase() === 'n'
-			) {
+		});
+	
+		const keyboardShortcuts = settings?.keyboard_shortcuts;
+		const addNewHotkey = keyboardShortcuts?.add_new;
+	
+		// Keyboard shortcut: user-configurable combo opens the "Add Shortcut" modal while the popup is open.
+		useEffect(() => {
+			const handleKeyDown = (e: KeyboardEvent) => {
+				if (!addNewHotkey) return;
+				if (!eventMatchesCombo(e, addNewHotkey)) return;
+	
 				// Only trigger when there is a list for the current app and no other modal is open
 				if (!hasListForCurrentApp || isModalOpen || isListModalOpen) {
 					return;
 				}
-
+	
 				e.preventDefault();
 				e.stopPropagation();
-
+	
 				setEditingShortcut(undefined);
 				setInsertIndex(null);
 				setIsModalOpen(true);
-			}
-		};
-
-		window.addEventListener('keydown', handleKeyDown);
-		return () => {
-			window.removeEventListener('keydown', handleKeyDown);
-		};
-	}, [hasListForCurrentApp, isModalOpen, isListModalOpen]);
+			};
+	
+			window.addEventListener('keydown', handleKeyDown);
+			return () => {
+				window.removeEventListener('keydown', handleKeyDown);
+			};
+		}, [addNewHotkey, hasListForCurrentApp, isModalOpen, isListModalOpen]);
 
 	if (loading) {
 		return (
@@ -508,25 +507,25 @@ export function Popup() {
 		return `${activeIdentifier} shortcuts`;
 	})();
 
-	const selectedList = selectedListId
+		const selectedList = selectedListId
 		? shortcutLists.find((l) => l.id === selectedListId) || null
 		: null;
 
 	const sortedShortcuts = selectedList ? sortShortcuts(selectedList.shortcuts) : [];
 
-	const nextOrder = selectedList ? selectedList.shortcuts.length : 0;
+		const nextOrder = selectedList ? selectedList.shortcuts.length : 0;
 
-	const contextMenuIndex =
-		contextMenu.isOpen
-			? sortedShortcuts.findIndex(
-				(s) => s.id === contextMenu.shortcutId,
-			)
-			: -1;
-
-	const canMoveUp = contextMenuIndex > 0;
-	const canMoveDown =
-		contextMenuIndex !== -1 &&
-		contextMenuIndex < sortedShortcuts.length - 1;
+		const contextMenuIndex =
+			contextMenu.isOpen
+				? sortedShortcuts.findIndex(
+					(s) => s.id === contextMenu.shortcutId,
+				)
+				: -1;
+	
+		const canMoveUp = contextMenuIndex > 0;
+		const canMoveDown =
+			contextMenuIndex !== -1 &&
+			contextMenuIndex < sortedShortcuts.length - 1;
 
 	return (
 		<div className="h-screen w-full bg-gray-900 text-white flex flex-col">
@@ -591,16 +590,20 @@ export function Popup() {
 				{selectedList ? sortedShortcuts.length > 0 ? (
 					<div>
 						{sortedShortcuts.map((shortcut, index) => (
-							<ShortcutRow
-								key={shortcut.id}
-								shortcut={shortcut}
-								index={index}
-								onClick={handleEditShortcut}
-								onContextMenu={handleShortcutContextMenu}
-								tabIndex={0}
-								onMoveUp={() => handleKeyboardMoveShortcut(shortcut.id, 'up')}
-								onMoveDown={() => handleKeyboardMoveShortcut(shortcut.id, 'down')}
-							/>
+								<ShortcutRow
+									key={shortcut.id}
+									shortcut={shortcut}
+									index={index}
+									onClick={handleEditShortcut}
+									onContextMenu={handleShortcutContextMenu}
+									tabIndex={0}
+									onMoveUp={() => handleKeyboardMoveShortcut(shortcut.id, 'up')}
+									onMoveDown={() => handleKeyboardMoveShortcut(shortcut.id, 'down')}
+									onDelete={() => handleDeleteShortcut(shortcut.id)}
+									moveUpHotkey={keyboardShortcuts?.move_up}
+									moveDownHotkey={keyboardShortcuts?.move_down}
+									deleteHotkey={keyboardShortcuts?.delete}
+								/>
 						))}
 					</div>
 				) : (
@@ -622,17 +625,20 @@ export function Popup() {
 				)}
 			</div>
 
-			{/* Add Shortcut / Create List Button */}
-			<div className="px-4 py-3">
-				{hasListForCurrentApp ? (
-					<button
-						onClick={handleAddShortcut}
-						className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-					>
-						<Plus className="w-4 h-4" />
-						Add Shortcut (Alt + N)
-					</button>
-				) : (
+				{/* Add Shortcut / Create List Button */}
+				<div className="px-4 py-3">
+					{hasListForCurrentApp ? (
+						<button
+							onClick={handleAddShortcut}
+							className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+						>
+							<Plus className="w-4 h-4" />
+							<span>
+								Add Shortcut
+								{addNewHotkey ? ` (${addNewHotkey})` : ''}
+							</span>
+						</button>
+					) : (
 					<button
 						onClick={() => handleCreateList(defaultNewListName)}
 						className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
@@ -660,7 +666,8 @@ export function Popup() {
 				onAddBelow={handleAddShortcutBelow}
 				onMoveUp={() => handleMoveShortcut('up')}
 				onMoveDown={() => handleMoveShortcut('down')}
-				onClose={closeContextMenu}
+					onClose={closeContextMenu}
+					keyboardShortcuts={keyboardShortcuts}
 			/>
 
 			{/* Modal */}

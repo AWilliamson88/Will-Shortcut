@@ -257,15 +257,15 @@ pub fn run() {
 	            let settings = crate::storage::load_settings().unwrap_or_else(|_| {
 	                storage::Settings {
 	                    // fallback if load fails
-	                    global_hotkey: "CommandOrControl+Shift+Alt+K".into(),
+	                    global_hotkey: "Ctrl+Shift+Alt+K".into(),
 	                    always_on_top: true,
 	                    run_on_startup: true,
 	                    keyboard_shortcuts: storage::KeyboardShortcuts {
-	                        move_up: "Control+Up".into(),
-	                        move_down: "Control+Down".into(),
-	                        duplicate: "Control+D".into(),
+	                        move_up: "Alt+Up".into(),
+	                        move_down: "Alt+Down".into(),
+	                        duplicate: "Ctrl+D".into(),
 	                        delete: "Delete".into(),
-	                        add_new: "Control+N".into(),
+	                        add_new: "Ctrl+N".into(),
 	                    },
                     window_position: "BottomRight".into(),
 	                    show_app_name_in_dropdown: true,
@@ -362,15 +362,15 @@ fn register_global_hotkey(app: &tauri::AppHandle, hotkey: &str) -> Result<(), St
                                         crate::storage::load_settings().unwrap_or_else(|_| {
                                             storage::Settings {
                                                 // simple fallback if load fails
-                                                global_hotkey: "CommandOrControl+Shift+Alt+K".into(),
+                                                global_hotkey: "Ctrl+Shift+Alt+K".into(),
                                                 always_on_top: true,
                                                 run_on_startup: true,
                                                 keyboard_shortcuts: storage::KeyboardShortcuts {
-                                                    move_up: "Control+Up".into(),
-                                                    move_down: "Control+Down".into(),
-                                                    duplicate: "Control+D".into(),
+                                                    move_up: "Alt+Up".into(),
+                                                    move_down: "Alt+Down".into(),
+                                                    duplicate: "Ctrl+D".into(),
                                                     delete: "Delete".into(),
-                                                    add_new: "Control+N".into(),
+                                                    add_new: "Ctrl+N".into(),
                                                 },
                                                 window_position: "BottomRight".into(),
 	                                                show_app_name_in_dropdown: true,
