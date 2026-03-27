@@ -34,13 +34,22 @@ pub struct ShortcutList {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct KeyboardShortcuts {
     pub move_up: String,
     pub move_down: String,
     pub duplicate: String,
     pub delete: String,
     pub add_new: String,
+    pub add_above: String,
+    pub add_below: String,
 }
+
+impl Default for KeyboardShortcuts {
+	    fn default() -> Self {
+	        default_keyboard_shortcuts()
+	    }
+	}
 
 fn default_keyboard_shortcuts() -> KeyboardShortcuts {
     KeyboardShortcuts {
@@ -49,6 +58,8 @@ fn default_keyboard_shortcuts() -> KeyboardShortcuts {
         duplicate: "Ctrl+D".to_string(),
         delete: "Delete".to_string(),
         add_new: "Ctrl+N".to_string(),
+        add_above: "Ctrl+Shift+N".to_string(),
+        add_below: "Ctrl+Alt+N".to_string(),
     }
 }
 

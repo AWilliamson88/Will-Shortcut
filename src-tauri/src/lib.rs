@@ -134,8 +134,7 @@ fn debug_dump_applications() -> Result<Vec<storage::Application>, String> {
 use tauri::{
     menu::{Menu, MenuItem},
     tray::TrayIconBuilder,
-    Manager,
-    PhysicalPosition,
+    Manager, PhysicalPosition,
 };
 
 // Toggle window visibility
@@ -206,81 +205,83 @@ pub fn run() {
             debug_dump_applications,
             refresh_global_hotkey
         ])
-	        .setup(|app| {
-	            #[cfg(desktop)]
-	            app.handle().plugin(tauri_plugin_autostart::init(
-	                tauri_plugin_autostart::MacosLauncher::LaunchAgent,
-	                None,
-	            ));
+        .setup(|app| {
+            #[cfg(desktop)]
+            app.handle().plugin(tauri_plugin_autostart::init(
+                tauri_plugin_autostart::MacosLauncher::LaunchAgent,
+                None,
+            ));
 
-	            // Create a system tray icon with:
-	            // - Open Settings
-	            // - Quit Will-Shortcut
-	            #[cfg(desktop)]
-	            {
-	                let open_settings_item =
-	                    MenuItem::with_id(app, "open_settings", "Open Settings", true, None::<&str>)
-	                        .expect("failed to create tray Open Settings menu item");
-	                let quit_item =
-	                    MenuItem::with_id(app, "quit", "Quit Will-Shortcut", true, None::<&str>)
-	                        .expect("failed to create tray Quit menu item");
-	                let menu = Menu::with_items(app, &[&open_settings_item, &quit_item])
-	                    .expect("failed to create tray menu");
+            // Create a system tray icon with:
+            // - Open Settings
+            // - Quit Will-Shortcut
+            #[cfg(desktop)]
+            {
+                let open_settings_item =
+                    MenuItem::with_id(app, "open_settings", "Open Settings", true, None::<&str>)
+                        .expect("failed to create tray Open Settings menu item");
+                let quit_item =
+                    MenuItem::with_id(app, "quit", "Quit Will-Shortcut", true, None::<&str>)
+                        .expect("failed to create tray Quit menu item");
+                let menu = Menu::with_items(app, &[&open_settings_item, &quit_item])
+                    .expect("failed to create tray menu");
 
-	                // Use the app icon as the tray icon
-	                let _tray = TrayIconBuilder::new()
-	                    .icon(app.default_window_icon().unwrap().clone())
-	                    .menu(&menu)
-	                    .menu_on_left_click(true)
-	                    .on_menu_event(|app, event| match event.id.as_ref() {
-	                        "open_settings" => {
-	                            if let Some(window) = app.get_webview_window("settings") {
-	                                let _ = window.show();
-	                                let _ = window.set_focus();
-	                            }
-	                        }
-	                        "quit" => {
-	                            app.exit(0);
-	                        }
-	                        _ => {
-	                            println!("Unhandled tray menu item: {:?}", event.id);
-	                        }
-	                    })
-	                    .build(app)
-	                    .expect("failed to build tray icon");
-	            }
+                // Use the app icon as the tray icon
+                let _tray = TrayIconBuilder::new()
+                    .icon(app.default_window_icon().unwrap().clone())
+                    .menu(&menu)
+                    .menu_on_left_click(true)
+                    .on_menu_event(|app, event| match event.id.as_ref() {
+                        "open_settings" => {
+                            if let Some(window) = app.get_webview_window("settings") {
+                                let _ = window.show();
+                                let _ = window.set_focus();
+                            }
+                        }
+                        "quit" => {
+                            app.exit(0);
+                        }
+                        _ => {
+                            println!("Unhandled tray menu item: {:?}", event.id);
+                        }
+                    })
+                    .build(app)
+                    .expect("failed to build tray icon");
+            }
 
-	            use active_win_pos_rs::get_active_window;
-	            use tauri_plugin_global_shortcut::GlobalShortcutExt;
+            use active_win_pos_rs::get_active_window;
+            use tauri_plugin_global_shortcut::GlobalShortcutExt;
 
-	            // Load settings once at startup
-	            let settings = crate::storage::load_settings().unwrap_or_else(|_| {
-	                storage::Settings {
-	                    // fallback if load fails
-	                    global_hotkey: "Ctrl+Shift+Alt+K".into(),
-	                    always_on_top: true,
-	                    run_on_startup: true,
-	                    keyboard_shortcuts: storage::KeyboardShortcuts {
-	                        move_up: "Alt+Up".into(),
-	                        move_down: "Alt+Down".into(),
-	                        duplicate: "Ctrl+D".into(),
-	                        delete: "Delete".into(),
-	                        add_new: "Ctrl+N".into(),
-	                    },
+            // Load settings once at startup
+            let settings = crate::storage::load_settings().unwrap_or_else(|_| {
+                storage::Settings {
+                    // fallback if load fails
+                    global_hotkey: "Ctrl+Shift+Alt+K".into(),
+                    always_on_top: true,
+                    run_on_startup: true,
+                    keyboard_shortcuts: storage::KeyboardShortcuts {
+                        move_up: "Alt+Up".into(),
+                        move_down: "Alt+Down".into(),
+                        duplicate: "Ctrl+D".into(),
+                        delete: "Delete".into(),
+                        add_new: "Ctrl+N".into(),
+                        add_above: "Ctrl+Shift+N".into(),
+                        add_below: "Ctrl+Alt+N".into(),
+                    },
                     window_position: "BottomRight".into(),
-	                    show_app_name_in_dropdown: true,
-	                    show_all_lists: false,
-	                }
-	            });
+                    show_app_name_in_dropdown: true,
+                    show_all_lists: false,
+                }
+            });
 
-	            // Register global hotkey using helper
-	            let app_handle = app.handle().clone();
-	            if let Err(e) = register_global_hotkey(&app_handle, settings.global_hotkey.as_str()) {
-	                eprintln!("Failed to register global hotkey on startup: {e}");
-	            }
+            // Register global hotkey using helper
+            let app_handle = app.handle().clone();
+            if let Err(e) = register_global_hotkey(&app_handle, settings.global_hotkey.as_str()) {
+                eprintln!("Failed to register global hotkey on startup: {e}");
+            }
 
-	            Ok(())
-	        })
+            Ok(())
+        })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
@@ -371,10 +372,12 @@ fn register_global_hotkey(app: &tauri::AppHandle, hotkey: &str) -> Result<(), St
                                                     duplicate: "Ctrl+D".into(),
                                                     delete: "Delete".into(),
                                                     add_new: "Ctrl+N".into(),
+                                                    add_above: "Ctrl+Shift+N".into(),
+                                                    add_below: "Ctrl+Alt+N".into(),
                                                 },
                                                 window_position: "BottomRight".into(),
-	                                                show_app_name_in_dropdown: true,
-	                                                show_all_lists: false,
+                                                show_app_name_in_dropdown: true,
+                                                show_all_lists: false,
                                             }
                                         });
 
