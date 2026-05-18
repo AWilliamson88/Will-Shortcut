@@ -5,6 +5,11 @@ mod window_detection;
 
 use tauri::Emitter;
 
+// Increment this when The default data needs to be changed/updated. E.g defaults.rs
+// has been changed/updated.
+// Updates will be applied only once (e.g., adding new default shortcuts/lists).
+const DEFAULTS_SEED_VERSION: u32 = 2;
+
 #[tauri::command]
 fn greet(name: &str) -> String {
     format!("Hello, {}! You've been greeted from Rust!", name)
@@ -112,14 +117,80 @@ fn save_settings(settings: storage::Settings) -> Result<(), String> {
     storage::save_settings(&settings)
 }
 
-// Initialize default data if none exists
+// Initialize or merge default data (applications are defined in applications.json).
+// This performs **shortcut-level** additive merging, but only once per
+// DEFAULTS_SEED_VERSION. 
 #[tauri::command]
 fn initialize_defaults() -> Result<(), String> {
-    let lists = storage::load_lists()?;
-    if lists.is_empty() {
-        let (_default_apps, default_lists) = defaults::create_default_data();
-        storage::save_lists(&default_lists)?;
+    // Load settings so we can get seed version
+    let mut settings = storage::load_settings()?;
+
+    // If the current default seed version is already applied, do nothing.
+    if settings.defaults_seed_version >= DEFAULTS_SEED_VERSION {
+        return Ok(());
     }
+
+    // Load all existing lists across applications
+    let mut existing_lists = storage::load_lists()?;
+    let (_default_apps, default_lists) = defaults::create_default_data();
+
+    use std::collections::HashSet;
+
+    let mut changed = false;
+
+    for mut default_list in default_lists {
+        // 1) Find an existing list with the same application_id + name
+        if let Some(existing) = existing_lists
+            .iter_mut()
+            .find(|l| l.application_id == default_list.application_id && l.name == default_list.name)
+        {
+            // 2) Shortcut-level merge: build a set of existing key_combos
+            let mut existing_keys: HashSet<String> = existing
+                .shortcuts
+                .iter()
+                .map(|s| s.key_combo.clone())
+                .collect();
+
+            // Determine the current max order to append new shortcuts at the end
+            let mut max_order = existing
+                .shortcuts
+                .iter()
+                .map(|s| s.order)
+                .max()
+                .unwrap_or(-1);
+
+            for mut default_shortcut in default_list.shortcuts.drain(..) {
+                // If this key_combo already exists, do NOT overwrite user data
+                if existing_keys.contains(&default_shortcut.key_combo) {
+                    continue;
+                }
+
+                existing_keys.insert(default_shortcut.key_combo.clone());
+                max_order += 1;
+
+                // Ensure a fresh id and append at the end with incremented order
+                default_shortcut.id = uuid::Uuid::new_v4().to_string();
+                default_shortcut.order = max_order;
+                existing.shortcuts.push(default_shortcut);
+                changed = true;
+            }
+        } else {
+            // 3) Entire list is new: add it as-is (user data integrity preserved)
+            existing_lists.push(default_list);
+            changed = true;
+        }
+    }
+
+    if changed {
+        storage::save_lists(&existing_lists)?;
+    }
+
+    // Record that we've applied this version of the defaults seeding so we
+    // don't run it again 
+    // Avoids re-creating deleted defaults.
+    settings.defaults_seed_version = DEFAULTS_SEED_VERSION;
+    storage::save_settings(&settings)?;
+
     Ok(())
 }
 
@@ -271,6 +342,7 @@ pub fn run() {
                     window_position: "BottomRight".into(),
                     show_app_name_in_dropdown: true,
                     show_all_lists: false,
+                    defaults_seed_version: 0,
                 }
             });
 
@@ -378,6 +450,7 @@ fn register_global_hotkey(app: &tauri::AppHandle, hotkey: &str) -> Result<(), St
                                                 window_position: "BottomRight".into(),
                                                 show_app_name_in_dropdown: true,
                                                 show_all_lists: false,
+                                                defaults_seed_version: 0,
                                             }
                                         });
 

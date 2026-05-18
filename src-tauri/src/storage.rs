@@ -75,6 +75,10 @@ fn default_show_all_lists() -> bool {
     false
 }
 
+fn default_defaults_seed_version() -> u32 {
+    0
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Settings {
     pub global_hotkey: String,
@@ -88,6 +92,8 @@ pub struct Settings {
     pub show_app_name_in_dropdown: bool,
     #[serde(default = "default_show_all_lists")]
     pub show_all_lists: bool,
+    #[serde(default = "default_defaults_seed_version")]
+    pub defaults_seed_version: u32,
 }
 
 fn default_settings() -> Settings {
@@ -99,6 +105,7 @@ fn default_settings() -> Settings {
         window_position: default_window_position(),
         show_app_name_in_dropdown: default_show_app_name_in_dropdown(),
         show_all_lists: default_show_all_lists(),
+        defaults_seed_version: default_defaults_seed_version(),
     }
 }
 
