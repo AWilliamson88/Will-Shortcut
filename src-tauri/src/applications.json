@@ -1,6 +1,426 @@
 [
-  {"id":"9e121cd1-9808-47b9-99c9-072699fbeff3","name":"VS Code","process_name":"Code.exe",
-    "detection_name": "Visual Studio Code","icon":null,"last_used_list_id":null},
-  {"id":"658cf89a-1955-43b9-95b1-6bbc1673aac5","name":"Chrome","process_name":"chrome.exe",
-    "detection_name": "Google Chrome","icon":null,"last_used_list_id":null}
+  {
+    "id": "9e121cd1-9808-47b9-99c9-072699fbeff3",
+    "name": "VS Code",
+    "process_name": "Code.exe",
+    "detection_name": "Visual Studio Code",
+    "icon": null,
+    "last_used_list_id": null
+  },
+  {
+    "id": "658cf89a-1955-43b9-95b1-6bbc1673aac5",
+    "name": "Chrome",
+    "process_name": "chrome.exe",
+    "detection_name": "Google Chrome",
+    "icon": null,
+    "last_used_list_id": null
+  },
+  {
+    "id": "app-msedge",
+    "name": "Microsoft Edge",
+    "process_name": "msedge.exe",
+    "detection_name": "Microsoft Edge",
+    "icon": null,
+    "last_used_list_id": null
+  },
+  {
+    "id": "app-firefox",
+    "name": "Firefox",
+    "process_name": "firefox.exe",
+    "detection_name": "Mozilla Firefox",
+    "icon": null,
+    "last_used_list_id": null
+  },
+  {
+    "id": "app-safari",
+    "name": "Safari",
+    "process_name": "Safari",
+    "detection_name": "Safari",
+    "icon": null,
+    "last_used_list_id": null
+  },
+  {
+    "id": "app-brave",
+    "name": "Brave",
+    "process_name": "brave.exe",
+    "detection_name": "Brave Browser",
+    "icon": null,
+    "last_used_list_id": null
+  },
+  {
+    "id": "app-opera",
+    "name": "Opera",
+    "process_name": "opera.exe",
+    "detection_name": "Opera",
+    "icon": null,
+    "last_used_list_id": null
+  },
+  {
+    "id": "app-visual-studio",
+    "name": "Visual Studio",
+    "process_name": "devenv.exe",
+    "detection_name": "Microsoft Visual Studio",
+    "icon": null,
+    "last_used_list_id": null
+  },
+  {
+    "id": "app-intellij-idea",
+    "name": "IntelliJ IDEA",
+    "process_name": "idea64.exe",
+    "detection_name": "IntelliJ IDEA",
+    "icon": null,
+    "last_used_list_id": null
+  },
+  {
+    "id": "app-pycharm",
+    "name": "PyCharm",
+    "process_name": "pycharm64.exe",
+    "detection_name": "PyCharm",
+    "icon": null,
+    "last_used_list_id": null
+  },
+  {
+    "id": "app-webstorm",
+    "name": "WebStorm",
+    "process_name": "webstorm64.exe",
+    "detection_name": "WebStorm",
+    "icon": null,
+    "last_used_list_id": null
+  },
+  {
+    "id": "app-rider",
+    "name": "Rider",
+    "process_name": "rider64.exe",
+    "detection_name": "Rider",
+    "icon": null,
+    "last_used_list_id": null
+  },
+  {
+    "id": "app-android-studio",
+    "name": "Android Studio",
+    "process_name": "studio64.exe",
+    "detection_name": "Android Studio",
+    "icon": null,
+    "last_used_list_id": null
+  },
+  {
+    "id": "app-xcode",
+    "name": "Xcode",
+    "process_name": "Xcode",
+    "detection_name": "Xcode",
+    "icon": null,
+    "last_used_list_id": null
+  },
+  {
+    "id": "app-sublime-text",
+    "name": "Sublime Text",
+    "process_name": "sublime_text.exe",
+    "detection_name": "Sublime Text",
+    "icon": null,
+    "last_used_list_id": null
+  },
+  {
+    "id": "app-notepad-plusplus",
+    "name": "Notepad++",
+    "process_name": "notepad++.exe",
+    "detection_name": "Notepad++",
+    "icon": null,
+    "last_used_list_id": null
+  },
+  {
+    "id": "app-vim",
+    "name": "Vim",
+    "process_name": "vim.exe",
+    "detection_name": "Vim",
+    "icon": null,
+    "last_used_list_id": null
+  },
+  {
+    "id": "app-emacs",
+    "name": "Emacs",
+    "process_name": "emacs.exe",
+    "detection_name": "Emacs",
+    "icon": null,
+    "last_used_list_id": null
+  },
+  {
+    "id": "app-windows-terminal",
+    "name": "Windows Terminal",
+    "process_name": "WindowsTerminal.exe",
+    "detection_name": "Windows Terminal",
+    "icon": null,
+    "last_used_list_id": null
+  },
+  {
+    "id": "app-cmd",
+    "name": "Command Prompt",
+    "process_name": "cmd.exe",
+    "detection_name": "Command Prompt",
+    "icon": null,
+    "last_used_list_id": null
+  },
+  {
+    "id": "app-powershell",
+    "name": "PowerShell",
+    "process_name": "powershell.exe",
+    "detection_name": "Windows PowerShell",
+    "icon": null,
+    "last_used_list_id": null
+  },
+  {
+    "id": "app-iterm2",
+    "name": "iTerm2",
+    "process_name": "iTerm2",
+    "detection_name": "iTerm2",
+    "icon": null,
+    "last_used_list_id": null
+  },
+  {
+    "id": "app-mac-terminal",
+    "name": "Terminal",
+    "process_name": "Terminal",
+    "detection_name": "Terminal",
+    "icon": null,
+    "last_used_list_id": null
+  },
+  {
+    "id": "app-windows-explorer",
+    "name": "File Explorer",
+    "process_name": "explorer.exe",
+    "detection_name": "File Explorer",
+    "icon": null,
+    "last_used_list_id": null
+  },
+  {
+    "id": "app-finder",
+    "name": "Finder",
+    "process_name": "Finder",
+    "detection_name": "Finder",
+    "icon": null,
+    "last_used_list_id": null
+  },
+  {
+    "id": "app-nautilus",
+    "name": "Nautilus",
+    "process_name": "nautilus",
+    "detection_name": "Nautilus",
+    "icon": null,
+    "last_used_list_id": null
+  },
+  {
+    "id": "app-dolphin",
+    "name": "Dolphin",
+    "process_name": "dolphin",
+    "detection_name": "Dolphin",
+    "icon": null,
+    "last_used_list_id": null
+  },
+  {
+    "id": "app-total-commander",
+    "name": "Total Commander",
+    "process_name": "TOTALCMD64.EXE",
+    "detection_name": "Total Commander",
+    "icon": null,
+    "last_used_list_id": null
+  },
+  {
+    "id": "app-word",
+    "name": "Word",
+    "process_name": "WINWORD.EXE",
+    "detection_name": "Microsoft Word",
+    "icon": null,
+    "last_used_list_id": null
+  },
+  {
+    "id": "app-onenote",
+    "name": "OneNote",
+    "process_name": "ONENOTE.EXE",
+    "detection_name": "OneNote",
+    "icon": null,
+    "last_used_list_id": null
+  },
+  {
+    "id": "app-excel",
+    "name": "Excel",
+    "process_name": "EXCEL.EXE",
+    "detection_name": "Microsoft Excel",
+    "icon": null,
+    "last_used_list_id": null
+  },
+  {
+    "id": "app-powerpoint",
+    "name": "PowerPoint",
+    "process_name": "POWERPNT.EXE",
+    "detection_name": "Microsoft PowerPoint",
+    "icon": null,
+    "last_used_list_id": null
+  },
+  {
+    "id": "app-outlook",
+    "name": "Outlook",
+    "process_name": "OUTLOOK.EXE",
+    "detection_name": "Microsoft Outlook",
+    "icon": null,
+    "last_used_list_id": null
+  },
+  {
+    "id": "app-slack",
+    "name": "Slack",
+    "process_name": "slack.exe",
+    "detection_name": "Slack",
+    "icon": null,
+    "last_used_list_id": null
+  },
+  {
+    "id": "app-teams",
+    "name": "Microsoft Teams",
+    "process_name": "ms-teams.exe",
+    "detection_name": "Microsoft Teams",
+    "icon": null,
+    "last_used_list_id": null
+  },
+  {
+    "id": "app-discord",
+    "name": "Discord",
+    "process_name": "Discord.exe",
+    "detection_name": "Discord",
+    "icon": null,
+    "last_used_list_id": null
+  },
+  {
+    "id": "app-zoom",
+    "name": "Zoom",
+    "process_name": "Zoom.exe",
+    "detection_name": "Zoom",
+    "icon": null,
+    "last_used_list_id": null
+  },
+  {
+    "id": "app-skype",
+    "name": "Skype",
+    "process_name": "Skype.exe",
+    "detection_name": "Skype",
+    "icon": null,
+    "last_used_list_id": null
+  },
+  {
+    "id": "app-figma",
+    "name": "Figma",
+    "process_name": "Figma.exe",
+    "detection_name": "Figma",
+    "icon": null,
+    "last_used_list_id": null
+  },
+  {
+    "id": "app-photoshop",
+    "name": "Photoshop",
+    "process_name": "Photoshop.exe",
+    "detection_name": "Adobe Photoshop",
+    "icon": null,
+    "last_used_list_id": null
+  },
+  {
+    "id": "app-illustrator",
+    "name": "Illustrator",
+    "process_name": "Illustrator.exe",
+    "detection_name": "Adobe Illustrator",
+    "icon": null,
+    "last_used_list_id": null
+  },
+  {
+    "id": "app-adobe-xd",
+    "name": "Adobe XD",
+    "process_name": "XD.exe",
+    "detection_name": "Adobe XD",
+    "icon": null,
+    "last_used_list_id": null
+  },
+  {
+    "id": "app-sketch",
+    "name": "Sketch",
+    "process_name": "Sketch",
+    "detection_name": "Sketch",
+    "icon": null,
+    "last_used_list_id": null
+  },
+  {
+    "id": "app-gitkraken",
+    "name": "GitKraken",
+    "process_name": "gitkraken.exe",
+    "detection_name": "GitKraken",
+    "icon": null,
+    "last_used_list_id": null
+  },
+  {
+    "id": "app-postman",
+    "name": "Postman",
+    "process_name": "Postman.exe",
+    "detection_name": "Postman",
+    "icon": null,
+    "last_used_list_id": null
+  },
+  {
+    "id": "app-insomnia",
+    "name": "Insomnia",
+    "process_name": "Insomnia.exe",
+    "detection_name": "Insomnia",
+    "icon": null,
+    "last_used_list_id": null
+  },
+  {
+    "id": "app-docker-desktop",
+    "name": "Docker Desktop",
+    "process_name": "Docker Desktop.exe",
+    "detection_name": "Docker Desktop",
+    "icon": null,
+    "last_used_list_id": null
+  },
+  {
+    "id": "app-git-gui",
+    "name": "Git GUI",
+    "process_name": "git-gui.exe",
+    "detection_name": "Git GUI",
+    "icon": null,
+    "last_used_list_id": null
+  },
+  {
+    "id": "app-notion",
+    "name": "Notion",
+    "process_name": "Notion.exe",
+    "detection_name": "Notion",
+    "icon": null,
+    "last_used_list_id": null
+  },
+  {
+    "id": "app-obsidian",
+    "name": "Obsidian",
+    "process_name": "Obsidian.exe",
+    "detection_name": "Obsidian",
+    "icon": null,
+    "last_used_list_id": null
+  },
+  {
+    "id": "app-evernote",
+    "name": "Evernote",
+    "process_name": "Evernote.exe",
+    "detection_name": "Evernote",
+    "icon": null,
+    "last_used_list_id": null
+  },
+  {
+    "id": "app-todoist",
+    "name": "Todoist",
+    "process_name": "Todoist.exe",
+    "detection_name": "Todoist",
+    "icon": null,
+    "last_used_list_id": null
+  },
+  {
+    "id": "app-trello",
+    "name": "Trello",
+    "process_name": "Trello.exe",
+    "detection_name": "Trello",
+    "icon": null,
+    "last_used_list_id": null
+  }
 ]
