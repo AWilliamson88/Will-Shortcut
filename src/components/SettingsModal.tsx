@@ -287,8 +287,8 @@ export function SettingsModal({
 								<p className="text-xs text-gray-400">
 									Edit the display name and icon for each detected application.
 								</p>
-								<div className="border border-gray-700 rounded max-h-64 overflow-y-auto">
-									<table className="w-full text-xs">
+								<div className="border border-gray-700 rounded">
+									<table className="w-full text-xs overflow-y-auto">
 										<thead className="bg-gray-900 sticky top-0">
 											<tr>
 												<th className="px-2 py-1 text-left text-gray-300 font-medium">
@@ -330,7 +330,7 @@ export function SettingsModal({
 															onChange={e =>
 																handleAppIconChange(app.id, e.target.value)
 															}
-															placeholder="e.g. 🔧 or icon path"
+															placeholder="icon path"
 														/>
 													</td>
 												</tr>
@@ -346,8 +346,8 @@ export function SettingsModal({
 								<p className="text-xs text-gray-400">
 									Configure in-app keyboard shortcuts for managing the selected list.
 								</p>
-								<div className="border border-gray-700 rounded max-h-64 overflow-y-auto">
-									<table className="w-full text-xs">
+								<div className="border border-gray-700 rounded">
+									<table className="w-full text-xs overflow-y-auto">
 									<thead className="bg-gray-900 sticky top-0">
 										<tr>
 											<th className="px-2 py-1 text-left text-gray-300 font-medium">

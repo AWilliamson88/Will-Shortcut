@@ -30,10 +30,14 @@
 - [X] Add the ability to delete shortcuts
 
 - [ ] Move shortcuts up and down
-    - [ ] Add a button to move the shortcut up and down
-    - [ ] Drag and drop?
-    - [ ] Hotkey to move up and down.
-    - [ ] The order of the shortcuts needs to be saved when the list is saved.
+    - [ ] Add hotkey text to the settings.
+    - [ ] Add text to the shortcut row context menu items showing the hotkeys to move up and down.
+    - [X] Add a button to move the shortcut up and down
+        - Not necessary. Use hotkeys.
+    - [O] Drag and drop?
+        - Not necessary. Use hotkeys.
+    - [X] Hotkey to move up and down.
+    - [X] The order of the shortcuts needs to be saved when the list is saved.
 - [X] Add the ability to delete lists
 - [X] Move the delete shortcut buttons from the individual shortcuts to the edit modal.
 - When there's no list for current app?
